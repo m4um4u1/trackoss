@@ -1,4 +1,7 @@
-# Trackoss
+
+# TrackOSS: Open-Source Track and activity Management System
+
+TrackOSS is an open-source alternative to proprietary platforms like Komoot and Strava, designed for outdoor enthusiasts who want to manage and analyze their tracks without relying on closed-source software. This project focuses on providing a free and open-source solution for tracking, visualizing, and sharing outdoor activities.
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.12.
 
