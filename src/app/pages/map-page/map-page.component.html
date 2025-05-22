@@ -1,10 +1,10 @@
 <div class="container-fluid h-100">
   <div class="row flex-grow-1">
     <div class="col-md-3 col-12 m-0 p-0">
-      <app-map-sidepanel />
+      <app-map-sidepanel (routePointsReady)="onRoutePointsUpdated($event)" />
     </div>
     <div class="col-md-9 col-12 m-0 p-0">
-      <app-libre-map />
+      <app-libre-map [startPoint]="currentStartPoint" [endPoint]="currentEndPoint" />
     </div>
   </div>
 </div>

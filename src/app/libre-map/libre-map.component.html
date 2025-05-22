@@ -1,10 +1,9 @@
 <mgl-map
-  [style]=this.mapStyleUrl
+  [style]="this.mapStyleUrl"
   [zoom]="[9]"
   [canvasContextAttributes]="{ preserveDrawingBuffer: true }"
   [center]="this.startPosition"
-  (mapLoad)="map = $event">
-  >
+  (mapLoad)="onMapLoad($event)">
   <mgl-control
     mglGeolocate
     [positionOptions]="{
