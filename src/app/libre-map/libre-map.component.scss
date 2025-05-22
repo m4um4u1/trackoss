@@ -2,3 +2,75 @@ mgl-map {
   height: 100%;
   width: 100%;
 }
+
+// General control button styling
+:host ::ng-deep .maplibregl-ctrl-group {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 10px;
+
+  button {
+    background-color: transparent;
+    border: none;
+    color: #333;
+    cursor: pointer;
+    display: block;
+    font-size: 1.2em;
+    height: 40px;
+    outline: none;
+    padding: 0;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    width: 40px;
+
+    &:hover {
+      background-color: #f0f0f0;
+    }
+
+    &:active {
+      background-color: #e0e0e0;
+    }
+
+    &.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon,
+    &.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon,
+    &.maplibregl-ctrl-compass .maplibregl-ctrl-icon,
+    &.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon {
+      background-size: 75%; // Make icons a bit smaller
+    }
+  }
+}
+
+// Geolocate control
+:host ::ng-deep .maplibregl-ctrl-geolocate {
+  button {
+    color: #2196F3; // Blue for geolocation
+
+    &:hover {
+      background-color: #e3f2fd; // Lighter blue on hover
+      color: #1976D2;
+    }
+  }
+}
+
+// Navigation control (Zoom in, Zoom out, Compass)
+:host ::ng-deep .maplibregl-ctrl-nav {
+  button {
+    color: #4CAF50; // Green for navigation
+
+    &:hover {
+      background-color: #e8f5e9; // Lighter green on hover
+      color: #388E3C;
+    }
+  }
+}
+
+// Scale control
+:host ::ng-deep .maplibregl-ctrl-scale {
+  background-color: rgba(255, 255, 255, 0.8); // Semi-transparent white
+  border-color: #A1887F; // Earthy tone for border
+  color: #5D4037; // Dark earthy tone for text
+  font-size: 0.9em;
+  padding: 5px 10px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
