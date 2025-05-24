@@ -22,7 +22,7 @@ export interface Coordinates { // Exporting for potential use elsewhere
   standalone: true,
 })
 export class LibreMapComponent implements OnInit, OnChanges { // Implement OnChanges
-  mapStyleUrl: string = `https://api.maptiler.com/maps/outdoor/style.json?key=${environment.maptileApiKey}`;
+  mapStyleUrl: string = `${environment.mapTileProxyBaseUrl}/style.json`;
   public map?: Map; // map property should be public if accessed from template, or use onMapLoad
   // startPosition is used for initial map center if no points are provided.
   startPosition: [number, number] = [13.404954, 52.520008]; // Berlin coordinates
