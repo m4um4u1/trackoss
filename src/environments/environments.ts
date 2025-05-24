@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  maptileApiKey: '1lm1yVfqIb88hvtSkptP',
+  mapTileProxyBaseUrl: 'http://localhost:8080/api/tiles', // URL for local Spring Boot backend
 };

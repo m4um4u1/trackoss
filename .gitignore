@@ -38,6 +38,8 @@ testem.log
 /typings
 .env
 
+# Environment specific secrets
+
 # System files
 .DS_Store
 Thumbs.db

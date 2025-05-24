@@ -15,6 +15,37 @@ ng serve
 
 Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
 
+## Map Tiles Configuration
+
+TrackOSS now relies on a backend service to securely provide map tiles. The API key for the map tile service (e.g., MapTiler) is managed by this backend, not directly in the frontend application.
+
+**Backend Setup:**
+
+You will need to set up and run the corresponding backend service. Detailed instructions for setting up the Spring Boot backend proxy are provided separately (refer to project documentation or previous communications if this README is part of the frontend-only repository).
+
+**Frontend Configuration:**
+
+The frontend application is configured to connect to this backend service. The URLs are defined in:
+- `src/environments/environments.ts` for development (defaults to `http://localhost:8080/api/tiles`)
+- `src/environments/environment.prod.ts` for production (defaults to `/api/tiles`, assuming same-domain deployment or reverse proxy setup)
+
+If your backend runs on a different URL during development or in production, you'll need to update these configuration files accordingly. For example, to change the development backend URL:
+
+Modify `src/environments/environments.ts`:
+```typescript
+export const environment = {
+  production: false,
+  // Update this URL to where your backend is running
+  mapTileProxyBaseUrl: 'http://your-backend-host:your-backend-port/api/tiles',
+};
+```
+
+**Running the Application:**
+
+1.  Ensure your backend service is running and accessible.
+2.  Run the Angular development server: `ng serve`.
+3.  Open your browser to `http://localhost:4200/`.
+
 ## Code scaffolding
 
 Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
