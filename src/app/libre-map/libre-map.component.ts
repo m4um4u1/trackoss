@@ -22,7 +22,7 @@ export interface Coordinates { // Exporting for potential use elsewhere
   standalone: true,
 })
 export class LibreMapComponent implements OnInit, OnChanges { // Implement OnChanges
-  mapStyleUrl: string = `${environment.mapTileProxyBaseUrl}/style.json`;
+  mapStyleUrl: string = `${environment.mapTileProxyBaseUrl}/outdoor/style.json`;
   public map?: Map; // map property should be public if accessed from template, or use onMapLoad
   // startPosition is used for initial map center if no points are provided.
   startPosition: [number, number] = [13.404954, 52.520008]; // Berlin coordinates
@@ -47,7 +47,7 @@ export class LibreMapComponent implements OnInit, OnChanges { // Implement OnCha
   public onMapLoad(mapInstance: Map): void {
     this.map = mapInstance;
     // Once map is loaded, process any initial inputs that might have already been set.
-    this.updateMarkersAndBounds(); 
+    this.updateMarkersAndBounds();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -93,7 +93,7 @@ export class LibreMapComponent implements OnInit, OnChanges { // Implement OnCha
         needsViewUpdate = true;
       }
     }
-    
+
     // Adjust Map View only if a relevant change occurred or it's an initial call with points
     if (needsViewUpdate) {
       if (this.startPoint && this.endPoint) {
@@ -103,14 +103,14 @@ export class LibreMapComponent implements OnInit, OnChanges { // Implement OnCha
         this.map.fitBounds(bounds, { padding: 60, maxZoom: 15 }); // Added padding and maxZoom
       } else if (this.startPoint) {
         this.map.setCenter([this.startPoint.lon, this.startPoint.lat]);
-        this.map.setZoom(12); 
+        this.map.setZoom(12);
       } else if (this.endPoint) {
         this.map.setCenter([this.endPoint.lon, this.endPoint.lat]);
-        this.map.setZoom(12); 
+        this.map.setZoom(12);
       } else {
         // If all points are removed, reset to default view
         this.map.setCenter(this.startPosition);
-        this.map.setZoom(10); 
+        this.map.setZoom(10);
       }
     }
   }
