@@ -1,27 +1,21 @@
-import { Component, Output, EventEmitter } from '@angular/core'; // Import Output and EventEmitter
+import { Component, Output, EventEmitter } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map } from 'rxjs/operators';
 import { of } from 'rxjs';
-
-// Define an interface for coordinates for clarity
-export interface Coordinates {
-  lat: number;
-  lon: number;
-}
+import { Coordinates } from '../models/coordinates';
 
 @Component({
   selector: 'app-map-sidepanel',
   imports: [FormsModule],
   templateUrl: './map-sidepanel.component.html',
   standalone: true,
-  styleUrl: './map-sidepanel.component.scss',
+  styleUrls: ['./map-sidepanel.component.scss'],
 })
 export class MapSidepanelComponent {
   public startPoint: string = '';
   public endPoint: string = '';
 
-  // Define the EventEmitter
   @Output() routePointsReady = new EventEmitter<{ start?: Coordinates, end?: Coordinates }>();
 
   constructor(private http: HttpClient) {}
@@ -29,8 +23,7 @@ export class MapSidepanelComponent {
   public getRoute(): void {
     if (!this.startPoint || !this.endPoint) {
       console.error('Start point and end point are required.');
-      // Emit an event with undefined points if validation fails
-      this.routePointsReady.emit({ start: undefined, end: undefined }); 
+      this.routePointsReady.emit({ start: undefined, end: undefined });
       return;
     }
 
@@ -40,7 +33,6 @@ export class MapSidepanelComponent {
     let geocodedStartCoords: Coordinates | undefined = undefined;
     let geocodedEndCoords: Coordinates | undefined = undefined;
 
-    // Geocode Start Point
     const startUrl = `${baseUrl}${encodeURIComponent(this.startPoint)}${format}`;
     this.http.get<any[]>(startUrl).pipe(
       map(response => {
@@ -51,7 +43,7 @@ export class MapSidepanelComponent {
       }),
       catchError(error => {
         console.error('Error geocoding start point:', error.message);
-        return of(null); 
+        return of(null);
       })
     ).subscribe(startCoords => {
       if (startCoords) {
@@ -59,7 +51,6 @@ export class MapSidepanelComponent {
         console.log('Geocoded Start Point:', geocodedStartCoords);
       }
 
-      // Geocode End Point
       const endUrl = `${baseUrl}${encodeURIComponent(this.endPoint)}${format}`;
       this.http.get<any[]>(endUrl).pipe(
         map(response => {
@@ -78,7 +69,6 @@ export class MapSidepanelComponent {
           console.log('Geocoded End Point:', geocodedEndCoords);
         }
 
-        // Emit the results
         this.routePointsReady.emit({ start: geocodedStartCoords, end: geocodedEndCoords });
 
         if (geocodedStartCoords && geocodedEndCoords) {
