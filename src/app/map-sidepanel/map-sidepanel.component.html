@@ -1,17 +1,23 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-12">
-      <form>
-        <div class="mb-3">
-          <label for="startPoint" class="form-label">Start Point</label>
-          <input type="text" class="form-control" id="startPoint" placeholder="Enter start location" [(ngModel)]="startPoint" name="startPoint">
-        </div>
-        <div class="mb-3">
-          <label for="endPoint" class="form-label">End Point</label>
-          <input type="text" class="form-control" id="endPoint" placeholder="Enter end location" [(ngModel)]="endPoint" name="endPoint">
-        </div>
-        <button type="button" class="btn btn-primary w-100" (click)="getRoute()">Get Route</button>
-      </form>
+      <app-route-calculator
+        [showRouteOptions]="true"
+        [showClearButton]="true"
+        [autoEmitCoordinates]="true"
+        (coordinatesReady)="onCoordinatesReady($event)"
+        (routeCalculated)="onRouteCalculated($event)"
+        (routeCleared)="onRouteCleared()"
+        (error)="onRouteError($event)">
+      </app-route-calculator>
+      
+      <div class="mt-3">
+        <app-route-display
+          [showActions]="true"
+          [showNoRouteMessage]="false"
+          [autoUpdate]="true">
+        </app-route-display>
+      </div>
     </div>
   </div>
 </div>

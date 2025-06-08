@@ -1,0 +1,30 @@
+<div class="route-display" *ngIf="routeResult">
+  <div class="route-info">
+    <h4>Route Information</h4>
+    <div class="route-details">
+      <div class="route-detail" *ngIf="routeResult.distance">
+        <span class="label">Distance:</span>
+        <span class="value">{{ formatDistance(routeResult.distance) }}</span>
+      </div>
+      <div class="route-detail" *ngIf="routeResult.duration">
+        <span class="label">Duration:</span>
+        <span class="value">{{ formatDuration(routeResult.duration) }}</span>
+      </div>
+      <div class="route-detail">
+        <span class="label">Start:</span>
+        <span class="value">{{ formatCoordinates(routeResult.startPoint) }}</span>
+      </div>
+      <div class="route-detail">
+        <span class="label">End:</span>
+        <span class="value">{{ formatCoordinates(routeResult.endPoint) }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="route-actions" *ngIf="showActions">
+    <button class="btn btn-primary" (click)="exportRoute()">Export Route</button>
+    <button class="btn btn-secondary" (click)="shareRoute()">Share Route</button>
+  </div>
+</div>
+<div class="no-route" *ngIf="!routeResult && showNoRouteMessage">
+  <p>No route calculated yet.</p>
+</div>
