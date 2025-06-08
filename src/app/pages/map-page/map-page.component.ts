@@ -16,7 +16,7 @@ export class MapPageComponent {
 
   constructor() {}
 
-  public onRoutePointsUpdated(points: { start?: Coordinates, end?: Coordinates }): void {
+  public onRoutePointsUpdated(points: { start?: Coordinates; end?: Coordinates }): void {
     this.currentStartPoint = points.start;
     this.currentEndPoint = points.end;
   }

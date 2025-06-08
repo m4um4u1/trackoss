@@ -1,0 +1,69 @@
+<div class="route-calculator">
+  <h4>Route Calculator</h4>
+
+  <div class="form-group">
+    <label for="startPoint">Start Point:</label>
+    <input
+      type="text"
+      id="startPoint"
+      class="form-control"
+      [(ngModel)]="startPointText"
+      placeholder="Enter start location"
+      [disabled]="isCalculating"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="endPoint">End Point:</label>
+    <input
+      type="text"
+      id="endPoint"
+      class="form-control"
+      [(ngModel)]="endPointText"
+      placeholder="Enter end location"
+      [disabled]="isCalculating"
+    />
+  </div>
+
+  <div class="form-group" *ngIf="showRouteOptions">
+    <label for="costing">Transportation Mode:</label>
+    <select
+      id="costing"
+      class="form-control"
+      [(ngModel)]="routeOptions.costing"
+      [disabled]="isCalculating"
+    >
+      @for (option of costingOptions; track option[0]) {
+        <option [ngValue]="option[1]">{{option[0]}}</option>
+      }
+    </select>
+  </div>
+
+  <div class="form-actions">
+    <button
+      class="btn btn-primary"
+      (click)="calculateRoute()"
+      [disabled]="!canCalculateRoute() || isCalculating"
+    >
+      <span *ngIf="isCalculating">Calculating...</span>
+      <span *ngIf="!isCalculating">Calculate Route</span>
+    </button>
+
+    <button
+      class="btn btn-secondary"
+      (click)="clearRoute()"
+      [disabled]="isCalculating"
+      *ngIf="showClearButton"
+    >
+      Clear Route
+    </button>
+  </div>
+
+  <div class="error-message" *ngIf="errorMessage">
+    <p class="text-danger">{{ errorMessage }}</p>
+  </div>
+
+  <div class="success-message" *ngIf="successMessage">
+    <p class="text-success">{{ successMessage }}</p>
+  </div>
+</div>
