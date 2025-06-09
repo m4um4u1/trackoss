@@ -32,6 +32,8 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
   successMessage: string = '';
 
   costingOptions: Map<string, string> = new Map<string,string>();
+  bicycleTypesOptions: string[] = ['road', 'hybrid', 'city', 'cross', 'mountain'];
+
   routeOptions: RouteOptions = {
     costing: 'bicycle',
     color: '#007cbf',
@@ -39,6 +41,7 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
   };
 
   private routeSubscription?: Subscription;
+
 
   constructor(
     private routeService: RouteService,

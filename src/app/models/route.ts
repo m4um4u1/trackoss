@@ -27,6 +27,7 @@ export interface RouteData {
 
 export interface RouteOptions {
   costing?: 'bicycle' | 'pedestrian';
+  bicycleType?: 'road' | 'hybrid' | 'city' | 'cross' | 'mountain';
   color?: string;
   width?: number;
 }

@@ -29,13 +29,15 @@ export class RouteService {
    */
   calculateRoute(start: Coordinates, end: Coordinates, options: RouteOptions = {}): Observable<RouteResult> {
     const costing = options.costing || 'bicycle';
+    const bicycleType = options.bicycleType || 'hybrid';
 
     const url = `${this.routingBaseUrl}?json={
       "locations": [
         {"lat": ${start.lat}, "lon": ${start.lon}},
         {"lat": ${end.lat}, "lon": ${end.lon}}
       ],
-      "costing": "${costing}"
+      "costing": "${costing}",
+      "bicycle_type": "${bicycleType}"
     }`;
 
     return this.http.get(url).pipe(
