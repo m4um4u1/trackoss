@@ -39,6 +39,22 @@
     </select>
   </div>
 
+  @if (routeOptions.costing === 'bicycle') {
+    <div  class="form-group">
+      <label for="bicycleType">Bicycle Type:</label>
+      <select
+        id="bicycleType"
+        class="form-control"
+       [(ngModel)]="routeOptions.bicycleType"
+       [disabled]="isCalculating"
+    >
+       @for (option of bicycleTypesOptions; track option) {
+         <option [ngValue]="option">{{option}}</option>
+       }
+     </select>
+  </div>
+  }
+
   <div class="form-actions">
     <button
       class="btn btn-primary"
