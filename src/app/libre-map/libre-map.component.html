@@ -4,17 +4,18 @@
   [zoom]="[9]"
   [canvasContextAttributes]="{ preserveDrawingBuffer: true }"
   [center]="this.startPosition"
-  (mapLoad)="onMapLoad($event)">
+  (mapLoad)="onMapLoad($event)"
+>
   <mgl-control
     mglGeolocate
     [positionOptions]="{
       enableHighAccuracy: true,
       timeout: 15000,
-      maximumAge: 60000
+      maximumAge: 60000,
     }"
     [trackUserLocation]="true"
   />
-  <mgl-control mglNavigation/>
+  <mgl-control mglNavigation />
 
-  <mgl-control mglScale unit="metric" position="bottom-left"/>
+  <mgl-control mglScale unit="metric" position="bottom-left" />
 </mgl-map>

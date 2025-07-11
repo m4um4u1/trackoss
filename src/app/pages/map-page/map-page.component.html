@@ -6,7 +6,8 @@
         [enableWaypointMode]="enableWaypointMode"
         (routePointsReady)="onRoutePointsUpdated($event)"
         (waypointsChanged)="onWaypointsChanged($event)"
-        (waypointModeToggled)="onWaypointModeToggled($event)" />
+        (waypointModeToggled)="onWaypointModeToggled($event)"
+      />
     </div>
     <div class="col-md-9 col-12 m-0 p-0">
       <app-libre-map
@@ -14,7 +15,8 @@
         [endPoint]="currentEndPoint"
         [waypoints]="currentWaypoints"
         [enableWaypointMode]="enableWaypointMode"
-        (waypointsChanged)="onWaypointsChanged($event)" />
+        (waypointsChanged)="onWaypointsChanged($event)"
+      />
     </div>
   </div>
 </div>

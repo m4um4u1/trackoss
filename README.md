@@ -1,4 +1,3 @@
-
 # TrackOSS: Open-Source Track and activity Management System
 
 TrackOSS is an open-source alternative to proprietary platforms like Komoot and Strava, designed for outdoor enthusiasts who want to manage and analyze their tracks without relying on closed-source software. This project focuses on providing a free and open-source solution for tracking, visualizing, and sharing outdoor activities.
@@ -26,12 +25,14 @@ You will need to set up and run the corresponding backend service. Detailed inst
 **Frontend Configuration:**
 
 The frontend application is configured to connect to this backend service. The URLs are defined in:
+
 - `src/environments/environments.ts` for development (defaults to `http://localhost:8080/api/tiles`)
 - `src/environments/environment.prod.ts` for production (defaults to `/api/tiles`, assuming same-domain deployment or reverse proxy setup)
 
 If your backend runs on a different URL during development or in production, you'll need to update these configuration files accordingly. For example, to change the development backend URL:
 
 Modify `src/environments/environments.ts`:
+
 ```typescript
 export const environment = {
   production: false,
