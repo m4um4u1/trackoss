@@ -20,7 +20,9 @@ mgl-map {
     height: 40px;
     outline: none;
     padding: 0;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
     width: 40px;
 
     &:hover {
@@ -43,11 +45,11 @@ mgl-map {
 // Geolocate control
 :host ::ng-deep .maplibregl-ctrl-geolocate {
   button {
-    color: #2196F3; // Blue for geolocation
+    color: #2196f3; // Blue for geolocation
 
     &:hover {
       background-color: #e3f2fd; // Lighter blue on hover
-      color: #1976D2;
+      color: #1976d2;
     }
   }
 }
@@ -55,11 +57,11 @@ mgl-map {
 // Navigation control (Zoom in, Zoom out, Compass)
 :host ::ng-deep .maplibregl-ctrl-nav {
   button {
-    color: #4CAF50; // Green for navigation
+    color: #4caf50; // Green for navigation
 
     &:hover {
       background-color: #e8f5e9; // Lighter green on hover
-      color: #388E3C;
+      color: #388e3c;
     }
   }
 }
@@ -67,8 +69,8 @@ mgl-map {
 // Scale control
 :host ::ng-deep .maplibregl-ctrl-scale {
   background-color: rgba(255, 255, 255, 0.8); // Semi-transparent white
-  border-color: #A1887F; // Earthy tone for border
-  color: #5D4037; // Dark earthy tone for text
+  border-color: #a1887f; // Earthy tone for border
+  color: #5d4037; // Dark earthy tone for text
   font-size: 0.9em;
   padding: 5px 10px;
   border-radius: 4px;

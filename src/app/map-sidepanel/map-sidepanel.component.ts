@@ -32,11 +32,9 @@ export class MapSidepanelComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     // Subscribe to multi-waypoint route updates
-    this.multiWaypointRouteSubscription = this.routeService.getCurrentMultiWaypointRoute().subscribe(
-      route => {
-        this.currentMultiWaypointRoute = route;
-      }
-    );
+    this.multiWaypointRouteSubscription = this.routeService.getCurrentMultiWaypointRoute().subscribe((route) => {
+      this.currentMultiWaypointRoute = route;
+    });
   }
 
   ngOnDestroy(): void {
@@ -58,7 +56,7 @@ export class MapSidepanelComponent implements OnInit, OnDestroy {
   }
 
   onRouteError(error: string): void {
-    console.error('Route calculation error:', error);
+    // Handle route calculation error
   }
 
   onWaypointsChanged(waypoints: RoutePoint[]): void {
@@ -74,9 +72,10 @@ export class MapSidepanelComponent implements OnInit, OnDestroy {
   }
 
   onWaypointRouteCalculated(): void {
-    // This will be handled by the parent component
-    // which will trigger the actual route calculation
-    console.log('Waypoint route calculation requested');
+    // Emit the current multi-waypoint route if available
+    if (this.currentMultiWaypointRoute) {
+      this.multiWaypointRouteCalculated.emit(this.currentMultiWaypointRoute);
+    }
   }
 
   onWaypointRouteCleared(): void {

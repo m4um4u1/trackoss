@@ -11,10 +11,9 @@
           type="checkbox"
           id="waypointModeToggle"
           [checked]="enableWaypointMode"
-          (change)="toggleWaypointMode()">
-        <label class="form-check-label" for="waypointModeToggle">
-          Waypoint Mode
-        </label>
+          (change)="toggleWaypointMode()"
+        />
+        <label class="form-check-label" for="waypointModeToggle"> Waypoint Mode </label>
       </div>
     </div>
 
@@ -30,12 +29,14 @@
             placeholder="Enter location (e.g., Berlin, Germany)"
             [(ngModel)]="newWaypointText"
             (keyup.enter)="addWaypoint()"
-            [disabled]="isAddingWaypoint">
+            [disabled]="isAddingWaypoint"
+          />
           <button
             class="btn btn-primary"
             type="button"
             (click)="addWaypoint()"
-            [disabled]="!newWaypointText.trim() || isAddingWaypoint">
+            [disabled]="!newWaypointText.trim() || isAddingWaypoint"
+          >
             <i class="fas fa-plus" *ngIf="!isAddingWaypoint"></i>
             <i class="fas fa-spinner fa-spin" *ngIf="isAddingWaypoint"></i>
             Add
@@ -86,20 +87,23 @@
                   class="btn btn-sm btn-outline-secondary me-1"
                   (click)="moveWaypointUp(i)"
                   [disabled]="i === 0"
-                  title="Move up">
+                  title="Move up"
+                >
                   <i class="fas fa-arrow-up"></i>
                 </button>
                 <button
                   class="btn btn-sm btn-outline-secondary me-1"
                   (click)="moveWaypointDown(i)"
                   [disabled]="i === waypoints.length - 1"
-                  title="Move down">
+                  title="Move down"
+                >
                   <i class="fas fa-arrow-down"></i>
                 </button>
                 <button
                   class="btn btn-sm btn-outline-danger"
                   (click)="removeWaypoint(waypoint.id!)"
-                  title="Remove waypoint">
+                  title="Remove waypoint"
+                >
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -141,9 +145,7 @@
 
     <div class="card-body text-center" *ngIf="!enableWaypointMode">
       <i class="fas fa-toggle-off fa-2x text-muted mb-3"></i>
-      <p class="text-muted">
-        Enable waypoint mode to plan routes with multiple stops.
-      </p>
+      <p class="text-muted">Enable waypoint mode to plan routes with multiple stops.</p>
     </div>
   </div>
 </div>

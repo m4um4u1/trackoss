@@ -27,32 +27,22 @@
 
   <div class="form-group" *ngIf="showRouteOptions">
     <label for="costing">Transportation Mode:</label>
-    <select
-      id="costing"
-      class="form-control"
-      [(ngModel)]="routeOptions.costing"
-      [disabled]="isCalculating"
-    >
+    <select id="costing" class="form-control" [(ngModel)]="routeOptions.costing" [disabled]="isCalculating">
       @for (option of costingOptions; track option[0]) {
-        <option [ngValue]="option[1]">{{option[0]}}</option>
+        <option [ngValue]="option[1]">{{ option[0] }}</option>
       }
     </select>
   </div>
 
   @if (routeOptions.costing === 'bicycle') {
-    <div  class="form-group">
+    <div class="form-group">
       <label for="bicycleType">Bicycle Type:</label>
-      <select
-        id="bicycleType"
-        class="form-control"
-       [(ngModel)]="routeOptions.bicycleType"
-       [disabled]="isCalculating"
-    >
-       @for (option of bicycleTypesOptions; track option) {
-         <option [ngValue]="option">{{option}}</option>
-       }
-     </select>
-  </div>
+      <select id="bicycleType" class="form-control" [(ngModel)]="routeOptions.bicycleType" [disabled]="isCalculating">
+        @for (option of bicycleTypesOptions; track option) {
+          <option [ngValue]="option">{{ option }}</option>
+        }
+      </select>
+    </div>
   }
 
   <div class="form-actions">
@@ -66,12 +56,7 @@
       <span *ngIf="!isCalculating">Calculate Route</span>
     </button>
 
-    <button
-      class="btn btn-secondary"
-      (click)="clearRoute()"
-      [disabled]="isCalculating"
-      *ngIf="showClearButton"
-    >
+    <button class="btn btn-secondary" (click)="clearRoute()" [disabled]="isCalculating" *ngIf="showClearButton">
       Clear Route
     </button>
   </div>

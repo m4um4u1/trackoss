@@ -11,9 +11,9 @@ import { environment } from '../../../environments/environments';
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './waypoint-manager.component.html',
-  styleUrls: ['./waypoint-manager.component.scss']
+  styleUrls: ['./waypoint-manager.component.scss'],
 })
-export class WaypointManagerComponent implements OnInit {
+export class WaypointManagerComponent {
   @Input() waypoints: RoutePoint[] = [];
   @Input() enableWaypointMode: boolean = false;
   @Input() multiWaypointRoute: MultiWaypointRoute | null = null;
@@ -27,9 +27,7 @@ export class WaypointManagerComponent implements OnInit {
   newWaypointText: string = '';
   isAddingWaypoint: boolean = false;
 
-  constructor(private http: HttpClient) {}
-
-  ngOnInit(): void {}
+  constructor() {}
 
   /**
    * Toggle waypoint mode on/off
@@ -95,7 +93,7 @@ export class WaypointManagerComponent implements OnInit {
    * Remove a waypoint by ID
    */
   removeWaypoint(waypointId: string): void {
-    const updatedWaypoints = this.waypoints.filter(wp => wp.id !== waypointId);
+    const updatedWaypoints = this.waypoints.filter((wp) => wp.id !== waypointId);
 
     // Reassign types and orders
     updatedWaypoints.forEach((wp, index) => {
@@ -161,23 +159,10 @@ export class WaypointManagerComponent implements OnInit {
    * Get display name for waypoint
    */
   getWaypointDisplayName(waypoint: RoutePoint): string {
-    return waypoint.name || `${waypoint.type} (${waypoint.coordinates.lat.toFixed(4)}, ${waypoint.coordinates.lon.toFixed(4)})`;
-  }
-
-  /**
-   * Get icon class for waypoint type
-   */
-  getWaypointIcon(type: string): string {
-    switch (type) {
-      case 'start':
-        return 'fas fa-play-circle text-success';
-      case 'end':
-        return 'fas fa-stop-circle text-danger';
-      case 'waypoint':
-        return 'fas fa-map-marker-alt text-warning';
-      default:
-        return 'fas fa-circle';
-    }
+    return (
+      waypoint.name ||
+      `${waypoint.type} (${waypoint.coordinates.lat.toFixed(4)}, ${waypoint.coordinates.lon.toFixed(4)})`
+    );
   }
 
   /**
@@ -219,7 +204,7 @@ export class WaypointManagerComponent implements OnInit {
     const leg = this.multiWaypointRoute.legs[index];
     return {
       distance: leg.distance || 0,
-      duration: leg.duration || 0
+      duration: leg.duration || 0,
     };
   }
 
@@ -254,7 +239,7 @@ export class WaypointManagerComponent implements OnInit {
       if (data && data.length > 0 && data[0].lat && data[0].lon) {
         return {
           lat: parseFloat(data[0].lat),
-          lon: parseFloat(data[0].lon)
+          lon: parseFloat(data[0].lon),
         };
       }
 

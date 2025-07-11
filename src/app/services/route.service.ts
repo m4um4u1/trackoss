@@ -14,8 +14,6 @@ export class RouteService {
   private routingBaseUrl: string = environment.valhallaUrl + '/route';
   private currentRoute$ = new BehaviorSubject<RouteResult | null>(null);
   private currentMultiWaypointRoute$ = new BehaviorSubject<MultiWaypointRoute | null>(null);
-  private activeRoutes = new Map<string, RouteResult>();
-  private activeMultiWaypointRoutes = new Map<string, MultiWaypointRoute>();
 
   constructor(private http: HttpClient) {}
 
@@ -43,10 +41,10 @@ export class RouteService {
     const requestBody = {
       locations: [
         { lat: start.lat, lon: start.lon },
-        { lat: end.lat, lon: end.lon }
+        { lat: end.lat, lon: end.lon },
       ],
       costing: costing,
-      bicycle_type: bicycleType
+      bicycle_type: bicycleType,
     };
 
     const url = `${this.routingBaseUrl}?json=${encodeURIComponent(JSON.stringify(requestBody))}`;
@@ -74,15 +72,15 @@ export class RouteService {
 
     const costing = options.costing || 'bicycle';
     const bicycleType = options.bicycleType || 'hybrid';
-    const locations = waypoints.map(wp => ({
+    const locations = waypoints.map((wp) => ({
       lat: wp.coordinates.lat,
-      lon: wp.coordinates.lon
+      lon: wp.coordinates.lon,
     }));
 
     const requestBody = {
       locations: locations,
       costing: costing,
-      bicycle_type: bicycleType
+      bicycle_type: bicycleType,
     };
 
     const url = `${this.routingBaseUrl}?json=${encodeURIComponent(JSON.stringify(requestBody))}`;
@@ -112,8 +110,6 @@ export class RouteService {
     if (!response.trip || !response.trip.legs || response.trip.legs.length === 0) {
       throw new Error('Invalid route response');
     }
-
-    console.log(response);
 
     const leg = response.trip.legs[0];
     const decodedGeometry = this.decodePolyline(leg.shape, 6);
@@ -161,8 +157,6 @@ export class RouteService {
     if (!response.trip || !response.trip.legs || response.trip.legs.length === 0) {
       throw new Error('Invalid multi-waypoint route response');
     }
-
-    console.log('Multi-waypoint route response:', response);
 
     const legs: RouteLeg[] = [];
     const allCoordinates: [number, number][] = [];
@@ -317,7 +311,11 @@ export class RouteService {
   /**
    * Update an existing multi-waypoint route on a map
    */
-  updateMultiWaypointRouteOnMap(map: MapLibreMap, multiWaypointRoute: MultiWaypointRoute, sourceId: string = 'multi-route'): void {
+  updateMultiWaypointRouteOnMap(
+    map: MapLibreMap,
+    multiWaypointRoute: MultiWaypointRoute,
+    sourceId: string = 'multi-route',
+  ): void {
     if (!map || !multiWaypointRoute) return;
 
     const source = map.getSource(sourceId) as GeoJSONSource;
@@ -343,69 +341,11 @@ export class RouteService {
   }
 
   /**
-   * Store a route with a custom identifier
-   */
-  storeRoute(routeId: string, routeResult: RouteResult): void {
-    this.activeRoutes.set(routeId, routeResult);
-  }
-
-  /**
-   * Retrieve a stored route by identifier
-   */
-  getStoredRoute(routeId: string): RouteResult | undefined {
-    return this.activeRoutes.get(routeId);
-  }
-
-  /**
-   * Get all stored routes
-   */
-  getAllStoredRoutes(): Map<string, RouteResult> {
-    return new Map(this.activeRoutes);
-  }
-
-  /**
-   * Clear a stored route
-   */
-  clearStoredRoute(routeId: string): void {
-    this.activeRoutes.delete(routeId);
-  }
-
-  /**
    * Clear all stored routes
    */
   clearAllStoredRoutes(): void {
-    this.activeRoutes.clear();
-    this.activeMultiWaypointRoutes.clear();
     this.currentRoute$.next(null);
     this.currentMultiWaypointRoute$.next(null);
-  }
-
-  /**
-   * Store a multi-waypoint route with a custom identifier
-   */
-  storeMultiWaypointRoute(routeId: string, multiWaypointRoute: MultiWaypointRoute): void {
-    this.activeMultiWaypointRoutes.set(routeId, multiWaypointRoute);
-  }
-
-  /**
-   * Retrieve a stored multi-waypoint route by identifier
-   */
-  getStoredMultiWaypointRoute(routeId: string): MultiWaypointRoute | undefined {
-    return this.activeMultiWaypointRoutes.get(routeId);
-  }
-
-  /**
-   * Get all stored multi-waypoint routes
-   */
-  getAllStoredMultiWaypointRoutes(): Map<string, MultiWaypointRoute> {
-    return new Map(this.activeMultiWaypointRoutes);
-  }
-
-  /**
-   * Clear a stored multi-waypoint route
-   */
-  clearStoredMultiWaypointRoute(routeId: string): void {
-    this.activeMultiWaypointRoutes.delete(routeId);
   }
 
   /**
@@ -454,26 +394,5 @@ export class RouteService {
     }
 
     return coordinates;
-  }
-
-  /**
-   * Calculate distance between two coordinates (Haversine formula)
-   */
-  calculateDistance(coord1: Coordinates, coord2: Coordinates): number {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = this.toRadians(coord2.lat - coord1.lat);
-    const dLon = this.toRadians(coord2.lon - coord1.lon);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(coord1.lat)) *
-        Math.cos(this.toRadians(coord2.lat)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  private toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
   }
 }

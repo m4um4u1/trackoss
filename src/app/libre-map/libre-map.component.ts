@@ -1,4 +1,14 @@
-import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, AfterViewInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  Input,
+  Output,
+  EventEmitter,
+  OnChanges,
+  SimpleChanges,
+  AfterViewInit,
+  OnDestroy,
+} from '@angular/core';
 import { Map as MapLibreMap, Marker, LngLatBounds } from 'maplibre-gl';
 import { MapService } from '../services/map.service';
 import { RouteService } from '../services/route.service';
@@ -27,7 +37,7 @@ import { Subscription } from 'rxjs';
     ScaleControlDirective,
   ],
 })
-export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
+export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   public map?: MapLibreMap;
   public mapStyleUrl: string = ''; // Declare and initialize the mapStyleUrl property
   startPosition: [number, number] = [13.404954, 52.520008];
@@ -64,10 +74,6 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
   }
 
-  ngAfterViewInit(): void {
-    this.initializeMap();
-  }
-
   ngOnDestroy(): void {
     if (this.routeSubscription) {
       this.routeSubscription.unsubscribe();
@@ -83,11 +89,6 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       // Explicitly define the type of the style parameter
       this.mapStyleUrl = style; // Assign the fetched style URL to mapStyleUrl
     });
-  }
-
-  private initializeMap(): void {
-    // Map initialization is handled by the mgl-map component
-    // We just need to wait for the mapLoad event
   }
 
   public onMapLoad(mapInstance: MapLibreMap): void {
@@ -115,7 +116,10 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
 
     // Handle waypoints mode
-    if (this.enableWaypointMode && ((changes && (changes['waypoints'] || changes['enableWaypointMode'])) || (!changes && this.waypoints))) {
+    if (
+      this.enableWaypointMode &&
+      ((changes && (changes['waypoints'] || changes['enableWaypointMode'])) || (!changes && this.waypoints))
+    ) {
       this.clearWaypointMarkers();
       if (this.waypoints && this.waypoints.length > 0) {
         this.waypoints.forEach((waypoint) => {
@@ -163,7 +167,7 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       if (this.enableWaypointMode && this.waypoints && this.waypoints.length > 0) {
         // Handle waypoints mode with waypoints
         const bounds = new LngLatBounds();
-        this.waypoints.forEach(waypoint => {
+        this.waypoints.forEach((waypoint) => {
           bounds.extend([waypoint.coordinates.lon, waypoint.coordinates.lat]);
         });
         this.map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
@@ -195,7 +199,7 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       } else if (this.endPoint) {
         this.map.setCenter([this.endPoint.lon, this.endPoint.lat]);
         this.map.setZoom(12);
-      } else if (!this.enableWaypointMode && (!this.startPoint && !this.endPoint)) {
+      } else if (!this.enableWaypointMode && !this.startPoint && !this.endPoint) {
         // Handle traditional route mode with no points (cleared)
         // Only clear routes, don't reset map position
         if (this.map.getSource('route')) {
@@ -239,31 +243,6 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
           console.error('Error calculating route:', error);
         },
       });
-  }
-
-  /**
-   * Public method to manually trigger route calculation
-   */
-  public calculateRoute(): void {
-    if (this.enableWaypointMode && this.waypoints && this.waypoints.length >= 2) {
-      this.calculateAndDisplayMultiWaypointRoute();
-    } else {
-      this.calculateAndDisplayRoute();
-    }
-  }
-
-  /**
-   * Public method to get the current route result
-   */
-  public getCurrentRoute(): RouteResult | null {
-    let currentRoute: RouteResult | null = null;
-    this.routeService
-      .getCurrentRoute()
-      .subscribe((route) => {
-        currentRoute = route;
-      })
-      .unsubscribe();
-    return currentRoute;
   }
 
   /**
@@ -356,7 +335,7 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
    * Clear all waypoint markers
    */
   private clearWaypointMarkers(): void {
-    this.waypointMarkers.forEach(marker => marker.remove());
+    this.waypointMarkers.forEach((marker) => marker.remove());
     this.waypointMarkers = [];
   }
 
@@ -383,7 +362,7 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     if (!this.map) return;
 
     // Only focus on user location if no specific points are already set
-    const hasPoints = (this.startPoint || this.endPoint || (this.waypoints && this.waypoints.length > 0));
+    const hasPoints = this.startPoint || this.endPoint || (this.waypoints && this.waypoints.length > 0);
 
     if (!hasPoints) {
       this.geolocationService.requestLocationWithConsent().subscribe({
@@ -393,10 +372,10 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
             this.map.flyTo({
               center: [userLocation.lon, userLocation.lat],
               zoom: 14,
-              duration: 2000 // 2 second animation
+              duration: 2000, // 2 second animation
             });
           }
-        }
+        },
         // Note: If consent is denied or location unavailable, the observable completes
         // without emitting, so the map stays at the default location
       });
@@ -418,11 +397,10 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
           this.map.flyTo({
             center: [userLocation.lon, userLocation.lat],
             zoom: 14,
-            duration: 2000 // 2 second animation
+            duration: 2000, // 2 second animation
           });
         }
-      }
+      },
     });
   }
-
 }

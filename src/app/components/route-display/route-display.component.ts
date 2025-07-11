@@ -10,7 +10,7 @@ import { Coordinates } from '../../models/coordinates';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './route-display.component.html',
-  styleUrls: ['./route-display.component.scss']
+  styleUrls: ['./route-display.component.scss'],
 })
 export class RouteDisplayComponent implements OnInit, OnDestroy {
   @Input() showActions: boolean = true;
@@ -26,13 +26,11 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.autoUpdate) {
-      this.routeSubscription = this.routeService.getCurrentRoute().subscribe(
-        route => this.routeResult = route
-      );
+      this.routeSubscription = this.routeService.getCurrentRoute().subscribe((route) => (this.routeResult = route));
 
-      this.multiWaypointRouteSubscription = this.routeService.getCurrentMultiWaypointRoute().subscribe(
-        multiRoute => this.multiWaypointRoute = multiRoute
-      );
+      this.multiWaypointRouteSubscription = this.routeService
+        .getCurrentMultiWaypointRoute()
+        .subscribe((multiRoute) => (this.multiWaypointRoute = multiRoute));
     }
   }
 
@@ -79,7 +77,7 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
       endPoint: this.routeResult.endPoint,
       distance: this.routeResult.distance,
       duration: this.routeResult.duration,
-      routeData: this.routeResult.routeData
+      routeData: this.routeResult.routeData,
     };
 
     const dataStr = JSON.stringify(routeData, null, 2);
@@ -100,7 +98,7 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
     const shareData = {
       title: 'Route Information',
       text: `Route from ${this.formatCoordinates(this.routeResult.startPoint)} to ${this.formatCoordinates(this.routeResult.endPoint)}`,
-      url: window.location.href
+      url: window.location.href,
     };
 
     if (navigator.share) {
@@ -123,7 +121,7 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
       totalDistance: this.multiWaypointRoute.totalDistance,
       totalDuration: this.multiWaypointRoute.totalDuration,
       legs: this.multiWaypointRoute.legs,
-      routeData: this.multiWaypointRoute.routeData
+      routeData: this.multiWaypointRoute.routeData,
     };
 
     const dataStr = JSON.stringify(routeData, null, 2);
@@ -141,14 +139,14 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
   shareMultiWaypointRoute(): void {
     if (!this.multiWaypointRoute) return;
 
-    const waypointNames = this.multiWaypointRoute.waypoints.map(wp =>
-      wp.name || `${wp.coordinates.lat.toFixed(4)}, ${wp.coordinates.lon.toFixed(4)}`
-    ).join(' → ');
+    const waypointNames = this.multiWaypointRoute.waypoints
+      .map((wp) => wp.name || `${wp.coordinates.lat.toFixed(4)}, ${wp.coordinates.lon.toFixed(4)}`)
+      .join(' → ');
 
     const shareData = {
       title: 'Multi-Waypoint Route Information',
       text: `Route through: ${waypointNames}`,
-      url: window.location.href
+      url: window.location.href,
     };
 
     if (navigator.share) {
