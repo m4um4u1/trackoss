@@ -1,0 +1,149 @@
+<div class="waypoint-manager">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">
+        <i class="fas fa-route me-2"></i>
+        Waypoint Manager
+      </h5>
+      <div class="form-check form-switch">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          id="waypointModeToggle"
+          [checked]="enableWaypointMode"
+          (change)="toggleWaypointMode()">
+        <label class="form-check-label" for="waypointModeToggle">
+          Waypoint Mode
+        </label>
+      </div>
+    </div>
+
+    <div class="card-body" *ngIf="enableWaypointMode">
+      <!-- Add Waypoint Section -->
+      <div class="mb-3">
+        <label for="newWaypoint" class="form-label">Add Waypoint</label>
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            id="newWaypoint"
+            placeholder="Enter location (e.g., Berlin, Germany)"
+            [(ngModel)]="newWaypointText"
+            (keyup.enter)="addWaypoint()"
+            [disabled]="isAddingWaypoint">
+          <button
+            class="btn btn-primary"
+            type="button"
+            (click)="addWaypoint()"
+            [disabled]="!newWaypointText.trim() || isAddingWaypoint">
+            <i class="fas fa-plus" *ngIf="!isAddingWaypoint"></i>
+            <i class="fas fa-spinner fa-spin" *ngIf="isAddingWaypoint"></i>
+            Add
+          </button>
+        </div>
+        <div class="form-text">
+          <i class="fas fa-info-circle me-1"></i>
+          You can also click on the map to add waypoints
+        </div>
+      </div>
+
+      <!-- Waypoints List -->
+      <div class="waypoints-list" *ngIf="waypoints.length > 0">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Waypoints ({{ waypoints.length }})
+          </h6>
+          <!-- Total route statistics -->
+          <div class="route-totals" *ngIf="multiWaypointRoute">
+            <small class="text-muted">
+              <i class="fas fa-route me-1"></i>
+              {{ formatDistance(multiWaypointRoute.totalDistance || 0) }} •
+              {{ formatDuration(multiWaypointRoute.totalDuration || 0) }}
+            </small>
+          </div>
+        </div>
+
+        <div class="waypoint-container" *ngFor="let waypoint of waypoints; let i = index">
+          <!-- Waypoint Item -->
+          <div class="waypoint-item">
+            <div class="d-flex align-items-center">
+              <div class="waypoint-number me-3">
+                {{ i + 1 }}
+              </div>
+
+              <div class="waypoint-info flex-grow-1">
+                <div class="waypoint-name">
+                  {{ getWaypointDisplayName(waypoint) }}
+                </div>
+                <small class="text-muted">
+                  {{ waypoint.coordinates.lat.toFixed(4) }}, {{ waypoint.coordinates.lon.toFixed(4) }}
+                </small>
+              </div>
+
+              <div class="waypoint-controls">
+                <button
+                  class="btn btn-sm btn-outline-secondary me-1"
+                  (click)="moveWaypointUp(i)"
+                  [disabled]="i === 0"
+                  title="Move up">
+                  <i class="fas fa-arrow-up"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-secondary me-1"
+                  (click)="moveWaypointDown(i)"
+                  [disabled]="i === waypoints.length - 1"
+                  title="Move down">
+                  <i class="fas fa-arrow-down"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="removeWaypoint(waypoint.id!)"
+                  title="Remove waypoint">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Route Segment Info (between waypoints) -->
+          <div class="route-segment" *ngIf="i < waypoints.length - 1 && getRouteLegInfo(i)">
+            <div class="segment-line">
+              <div class="segment-info">
+                <i class="fas fa-arrow-down text-muted me-1"></i>
+                <small class="text-muted">
+                  {{ formatDistance(getRouteLegInfo(i)!.distance) }} •
+                  {{ formatDuration(getRouteLegInfo(i)!.duration) }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="alert alert-info mt-3" *ngIf="waypoints.length === 0">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Getting Started:</strong>
+        <ul class="mb-0 mt-2">
+          <li>Add waypoints by typing locations above</li>
+          <li>Or click directly on the map to place waypoints</li>
+          <li>You need at least 2 waypoints to calculate a route</li>
+          <li>Drag waypoints in the list to reorder them</li>
+        </ul>
+      </div>
+
+      <div class="alert alert-success mt-3" *ngIf="waypoints.length === 1">
+        <i class="fas fa-check-circle me-2"></i>
+        Great! Add one more waypoint to calculate your route.
+      </div>
+    </div>
+
+    <div class="card-body text-center" *ngIf="!enableWaypointMode">
+      <i class="fas fa-toggle-off fa-2x text-muted mb-3"></i>
+      <p class="text-muted">
+        Enable waypoint mode to plan routes with multiple stops.
+      </p>
+    </div>
+  </div>
+</div>

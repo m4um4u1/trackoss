@@ -1,10 +1,20 @@
 <div class="container-fluid h-100">
   <div class="row flex-grow-1">
     <div class="col-md-3 col-12 m-0 p-0">
-      <app-map-sidepanel (routePointsReady)="onRoutePointsUpdated($event)" />
+      <app-map-sidepanel
+        [waypoints]="currentWaypoints"
+        [enableWaypointMode]="enableWaypointMode"
+        (routePointsReady)="onRoutePointsUpdated($event)"
+        (waypointsChanged)="onWaypointsChanged($event)"
+        (waypointModeToggled)="onWaypointModeToggled($event)" />
     </div>
     <div class="col-md-9 col-12 m-0 p-0">
-      <app-libre-map [startPoint]="currentStartPoint" [endPoint]="currentEndPoint" />
+      <app-libre-map
+        [startPoint]="currentStartPoint"
+        [endPoint]="currentEndPoint"
+        [waypoints]="currentWaypoints"
+        [enableWaypointMode]="enableWaypointMode"
+        (waypointsChanged)="onWaypointsChanged($event)" />
     </div>
   </div>
 </div>

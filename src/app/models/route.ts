@@ -3,6 +3,9 @@ import { Coordinates } from './coordinates';
 export interface RoutePoint {
   coordinates: Coordinates;
   type: 'start' | 'end' | 'waypoint';
+  id?: string;
+  name?: string;
+  order?: number;
 }
 
 export interface RouteGeometry {
@@ -39,4 +42,21 @@ export interface RouteResult {
   distance?: number;
   duration?: number;
   rawResponse?: any;
+}
+
+export interface MultiWaypointRoute {
+  waypoints: RoutePoint[];
+  routeData: RouteData;
+  totalDistance?: number;
+  totalDuration?: number;
+  legs?: RouteLeg[];
+  rawResponse?: any;
+}
+
+export interface RouteLeg {
+  startPoint: Coordinates;
+  endPoint: Coordinates;
+  distance?: number;
+  duration?: number;
+  geometry: RouteGeometry;
 }
