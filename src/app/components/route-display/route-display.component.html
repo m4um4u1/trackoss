@@ -1,30 +1,55 @@
-<div class="route-display" *ngIf="routeResult">
+<!-- Route Display - handles both regular and multi-waypoint routes -->
+<div class="route-display" *ngIf="hasRoute()">
   <div class="route-info">
     <h4>Route Information</h4>
     <div class="route-details">
-      <div class="route-detail" *ngIf="routeResult.distance">
-        <span class="label">Distance:</span>
-        <span class="value">{{ formatDistance(routeResult.distance) }}</span>
+      <div class="route-detail" *ngIf="getDistance()">
+        <span class="label">{{ multiWaypointRoute ? 'Total Distance:' : 'Distance:' }}</span>
+        <span class="value">{{ formatDistance(getDistance()!) }}</span>
       </div>
-      <div class="route-detail" *ngIf="routeResult.duration">
-        <span class="label">Duration:</span>
-        <span class="value">{{ formatDuration(routeResult.duration) }}</span>
+      <div class="route-detail" *ngIf="getDuration()">
+        <span class="label">{{ multiWaypointRoute ? 'Total Duration:' : 'Duration:' }}</span>
+        <span class="value">{{ formatDuration(getDuration()!) }}</span>
       </div>
-      <div class="route-detail">
-        <span class="label">Start:</span>
-        <span class="value">{{ formatCoordinates(routeResult.startPoint) }}</span>
+
+      <!-- Regular route start/end points -->
+      <div *ngIf="routeResult && !multiWaypointRoute">
+        <div class="route-detail">
+          <span class="label">Start:</span>
+          <span class="value">{{ formatCoordinates(routeResult.startPoint) }}</span>
+        </div>
+        <div class="route-detail">
+          <span class="label">End:</span>
+          <span class="value">{{ formatCoordinates(routeResult.endPoint) }}</span>
+        </div>
       </div>
-      <div class="route-detail">
-        <span class="label">End:</span>
-        <span class="value">{{ formatCoordinates(routeResult.endPoint) }}</span>
+
+      <!-- Multi-waypoint route summary -->
+      <div *ngIf="multiWaypointRoute">
+        <div class="route-detail">
+          <span class="label">Waypoints:</span>
+          <span class="value">{{ multiWaypointRoute.waypoints.length }}</span>
+        </div>
+        <div class="route-detail">
+          <span class="label">Route Segments:</span>
+          <span class="value">{{ multiWaypointRoute.legs?.length || 0 }}</span>
+        </div>
       </div>
     </div>
+
+    <!-- Waypoint details are now shown in the waypoint manager to avoid duplication -->
   </div>
+
   <div class="route-actions" *ngIf="showActions">
-    <button class="btn btn-primary" (click)="exportRoute()">Export Route</button>
-    <button class="btn btn-secondary" (click)="shareRoute()">Share Route</button>
+    <button class="btn btn-primary" (click)="multiWaypointRoute ? exportMultiWaypointRoute() : exportRoute()">
+      Export Route
+    </button>
+    <button class="btn btn-secondary" (click)="multiWaypointRoute ? shareMultiWaypointRoute() : shareRoute()">
+      Share Route
+    </button>
   </div>
 </div>
-<div class="no-route" *ngIf="!routeResult && showNoRouteMessage">
+
+<div class="no-route" *ngIf="!hasRoute() && showNoRouteMessage">
   <p>No route calculated yet.</p>
 </div>

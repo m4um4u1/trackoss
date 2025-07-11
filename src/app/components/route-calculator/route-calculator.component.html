@@ -1,7 +1,7 @@
 <div class="route-calculator">
   <h4>Route Calculator</h4>
 
-  <div class="form-group">
+  <div class="form-group" *ngIf="showLocationInputs">
     <label for="startPoint">Start Point:</label>
     <input
       type="text"
@@ -13,7 +13,7 @@
     />
   </div>
 
-  <div class="form-group">
+  <div class="form-group" *ngIf="showLocationInputs">
     <label for="endPoint">End Point:</label>
     <input
       type="text"
@@ -60,6 +60,7 @@
       class="btn btn-primary"
       (click)="calculateRoute()"
       [disabled]="!canCalculateRoute() || isCalculating"
+      *ngIf="showCalculateButton"
     >
       <span *ngIf="isCalculating">Calculating...</span>
       <span *ngIf="!isCalculating">Calculate Route</span>

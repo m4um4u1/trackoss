@@ -19,6 +19,8 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
   @Input() showRouteOptions: boolean = true;
   @Input() showClearButton: boolean = true;
   @Input() autoEmitCoordinates: boolean = true;
+  @Input() showLocationInputs: boolean = true;
+  @Input() showCalculateButton: boolean = true;
 
   @Output() routeCalculated = new EventEmitter<RouteResult>();
   @Output() routeCleared = new EventEmitter<void>();
@@ -60,6 +62,9 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
   }
 
   canCalculateRoute(): boolean {
+    if (!this.showLocationInputs) {
+      return true; // When used for route options only, always allow "calculation"
+    }
     return this.startPointText.trim() !== '' && this.endPointText.trim() !== '';
   }
 
