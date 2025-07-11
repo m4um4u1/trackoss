@@ -2,6 +2,7 @@ import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChange
 import { Map as MapLibreMap, Marker, LngLatBounds } from 'maplibre-gl';
 import { MapService } from '../services/map.service';
 import { RouteService } from '../services/route.service';
+import { GeolocationService } from '../services/geolocation.service';
 import {
   MapComponent,
   ControlComponent,
@@ -50,6 +51,7 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   constructor(
     private mapService: MapService,
     private routeService: RouteService,
+    private geolocationService: GeolocationService,
   ) {}
 
   ngOnInit(): void {
@@ -92,6 +94,9 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     this.map = mapInstance;
     this.updateMarkersAndBounds();
     this.setupMapClickHandler();
+
+    // Automatically request user location consent and focus on their location
+    this.focusOnUserLocationIfNeeded();
   }
 
   private updateMarkersAndBounds(changes?: SimpleChanges): void {
@@ -113,8 +118,8 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     if (this.enableWaypointMode && ((changes && (changes['waypoints'] || changes['enableWaypointMode'])) || (!changes && this.waypoints))) {
       this.clearWaypointMarkers();
       if (this.waypoints && this.waypoints.length > 0) {
-        this.waypoints.forEach((waypoint, index) => {
-          const color = this.getWaypointColor(waypoint.type, index);
+        this.waypoints.forEach((waypoint) => {
+          const color = this.getWaypointColor(waypoint.type);
           const marker = new Marker({ color })
             .setLngLat([waypoint.coordinates.lon, waypoint.coordinates.lat])
             .addTo(this.map!);
@@ -248,15 +253,6 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   /**
-   * Public method to clear the route from the map
-   */
-  public clearRoute(): void {
-    if (this.map) {
-      this.routeService.removeRouteFromMap(this.map);
-    }
-  }
-
-  /**
    * Public method to get the current route result
    */
   public getCurrentRoute(): RouteResult | null {
@@ -343,7 +339,7 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   /**
    * Get color for waypoint marker based on type and index
    */
-  private getWaypointColor(type: string, index: number): string {
+  private getWaypointColor(type: string): string {
     switch (type) {
       case 'start':
         return '#00FF00'; // Green
@@ -380,38 +376,53 @@ export class LibreMapComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   /**
-   * Public method to clear all waypoints
+   * Focus the map on user location if no specific points are set
+   * Requests user consent first and only zooms if consent is granted
    */
-  public clearWaypoints(): void {
-    this.waypoints = [];
-    this.clearWaypointMarkers();
-    if (this.map && this.map.getSource('multi-route')) {
-      this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
+  private focusOnUserLocationIfNeeded(): void {
+    if (!this.map) return;
+
+    // Only focus on user location if no specific points are already set
+    const hasPoints = (this.startPoint || this.endPoint || (this.waypoints && this.waypoints.length > 0));
+
+    if (!hasPoints) {
+      this.geolocationService.requestLocationWithConsent().subscribe({
+        next: (userLocation: Coordinates) => {
+          if (this.map) {
+            // Use flyTo for smooth animation to user location
+            this.map.flyTo({
+              center: [userLocation.lon, userLocation.lat],
+              zoom: 14,
+              duration: 2000 // 2 second animation
+            });
+          }
+        }
+        // Note: If consent is denied or location unavailable, the observable completes
+        // without emitting, so the map stays at the default location
+      });
     }
   }
 
-
-
   /**
-   * Public method to remove a specific waypoint
+   * Request user location with browser consent and focus map on their location
+   * This will trigger the browser's permission dialog
+   * Call this method when user explicitly wants to use their location
    */
-  public removeWaypoint(waypointId: string): void {
-    if (!this.waypoints) return;
+  public requestUserLocationConsent(): void {
+    if (!this.map) return;
 
-    this.waypoints = this.waypoints.filter(wp => wp.id !== waypointId);
-
-    // Reassign types and orders
-    this.waypoints.forEach((wp, index) => {
-      wp.order = index;
-      if (index === 0) {
-        wp.type = 'start';
-      } else if (index === this.waypoints!.length - 1) {
-        wp.type = 'end';
-      } else {
-        wp.type = 'waypoint';
+    this.geolocationService.requestLocationWithConsent().subscribe({
+      next: (userLocation: Coordinates) => {
+        if (this.map) {
+          // Use flyTo for smooth animation to user location
+          this.map.flyTo({
+            center: [userLocation.lon, userLocation.lat],
+            zoom: 14,
+            duration: 2000 // 2 second animation
+          });
+        }
       }
     });
-
-    this.updateMarkersAndBounds();
   }
+
 }
