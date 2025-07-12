@@ -163,26 +163,16 @@ describe('RouteDisplayComponent', () => {
 
   it('should unsubscribe on destroy', () => {
     component.ngOnInit();
-    const routeSubscription = {
-      unsubscribe: jest.fn(),
-      closed: false,
-      add: jest.fn(),
-      remove: jest.fn(),
-    } as any;
-    const multiWaypointSubscription = {
-      unsubscribe: jest.fn(),
-      closed: false,
-      add: jest.fn(),
-      remove: jest.fn(),
-    } as any;
 
-    component['routeSubscription'] = routeSubscription;
-    component['multiWaypointRouteSubscription'] = multiWaypointSubscription;
+    // Spy on the destroy$ subject
+    const destroySubject = component['destroy$'];
+    const nextSpy = jest.spyOn(destroySubject, 'next');
+    const completeSpy = jest.spyOn(destroySubject, 'complete');
 
     component.ngOnDestroy();
 
-    expect(routeSubscription.unsubscribe).toHaveBeenCalled();
-    expect(multiWaypointSubscription.unsubscribe).toHaveBeenCalled();
+    expect(nextSpy).toHaveBeenCalled();
+    expect(completeSpy).toHaveBeenCalled();
   });
 
   it('should handle null route gracefully', () => {

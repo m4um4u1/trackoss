@@ -29,31 +29,13 @@ describe('LibreMapComponent', () => {
     removeSource: jest.fn(),
     on: jest.fn(),
     off: jest.fn(),
+    setCenter: jest.fn(),
+    setZoom: jest.fn(),
+    fitBounds: jest.fn(),
+    isStyleLoaded: jest.fn().mockReturnValue(true),
     getCanvas: jest.fn().mockReturnValue({ style: { cursor: 'default' } }),
   };
 
-  const mockRouteResult = {
-    startPoint: { lat: 52.520008, lon: 13.404954 },
-    endPoint: { lat: 48.137154, lon: 11.576124 },
-    distance: 1.5,
-    duration: 300,
-    routeData: {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: [
-              [13.404954, 52.520008],
-              [13.377704, 52.516275],
-            ],
-          },
-        },
-      ],
-    },
-  };
   const mockWaypoint: RoutePoint = {
     coordinates: mockCoordinates,
     type: 'start',
@@ -743,6 +725,26 @@ describe('LibreMapComponent', () => {
 
       expect(component.waypoints).toEqual([]);
       expect(component.enableWaypointMode).toBe(true);
+    });
+
+    it('should handle updateMapViewForWaypoints method existence', () => {
+      expect((component as any).updateMapViewForWaypoints).toBeDefined();
+      expect(typeof (component as any).updateMapViewForWaypoints).toBe('function');
+    });
+
+    it('should handle updateMapViewForWaypoints with no map instance', () => {
+      component.map = undefined;
+      component.waypoints = [
+        {
+          coordinates: { lat: 52.520008, lon: 13.404954 },
+          type: 'start' as const,
+          order: 0,
+        },
+      ];
+
+      expect(() => {
+        (component as any).updateMapViewForWaypoints();
+      }).not.toThrow();
     });
   });
 });

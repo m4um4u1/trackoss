@@ -2,8 +2,8 @@ import { Component, Input, Output, EventEmitter, OnDestroy, OnInit } from '@angu
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { catchError, map } from 'rxjs/operators';
-import { of, Subscription, firstValueFrom } from 'rxjs';
+import { catchError, map, takeUntil } from 'rxjs/operators';
+import { of, Subscription, firstValueFrom, Subject } from 'rxjs';
 import { RouteService } from '../../services/route.service';
 import { Coordinates } from '../../models/coordinates';
 import { RouteResult, RouteOptions } from '../../models/route';
@@ -43,6 +43,7 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
   };
 
   private routeSubscription?: Subscription;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private routeService: RouteService,
@@ -55,6 +56,9 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+
     if (this.routeSubscription) {
       this.routeSubscription.unsubscribe();
     }
@@ -86,7 +90,9 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
       }
 
       // Calculate the route
-      this.routeSubscription = this.routeService.calculateRoute(startCoords, endCoords, this.routeOptions).subscribe({
+      this.routeSubscription = this.routeService.calculateRoute(startCoords, endCoords, this.routeOptions)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
         next: (routeResult: RouteResult) => {
           this.isCalculating = false;
           this.successMessage = 'Route calculated successfully!';

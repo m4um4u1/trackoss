@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { Subject, combineLatest } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { RouteService } from '../../services/route.service';
 import { RouteResult, MultiWaypointRoute } from '../../models/route';
 import { Coordinates } from '../../models/coordinates';
@@ -19,28 +20,28 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
 
   routeResult: RouteResult | null = null;
   multiWaypointRoute: MultiWaypointRoute | null = null;
-  private routeSubscription?: Subscription;
-  private multiWaypointRouteSubscription?: Subscription;
+  private destroy$ = new Subject<void>();
 
   constructor(private routeService: RouteService) {}
 
   ngOnInit(): void {
     if (this.autoUpdate) {
-      this.routeSubscription = this.routeService.getCurrentRoute().subscribe((route) => (this.routeResult = route));
-
-      this.multiWaypointRouteSubscription = this.routeService
-        .getCurrentMultiWaypointRoute()
-        .subscribe((multiRoute) => (this.multiWaypointRoute = multiRoute));
+      // Combine both route observables into a single subscription
+      combineLatest([
+        this.routeService.getCurrentRoute(),
+        this.routeService.getCurrentMultiWaypointRoute()
+      ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(([route, multiRoute]) => {
+        this.routeResult = route;
+        this.multiWaypointRoute = multiRoute;
+      });
     }
   }
 
   ngOnDestroy(): void {
-    if (this.routeSubscription) {
-      this.routeSubscription.unsubscribe();
-    }
-    if (this.multiWaypointRouteSubscription) {
-      this.multiWaypointRouteSubscription.unsubscribe();
-    }
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   formatDistance(distance: number): string {

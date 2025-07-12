@@ -5,6 +5,8 @@
         [waypoints]="currentWaypoints"
         [enableWaypointMode]="enableWaypointMode"
         (routePointsReady)="onRoutePointsUpdated($event)"
+        (routeCalculated)="onRouteCalculated($event)"
+        (multiWaypointRouteCalculated)="onMultiWaypointRouteCalculated($event)"
         (waypointsChanged)="onWaypointsChanged($event)"
         (waypointModeToggled)="onWaypointModeToggled($event)"
       />
