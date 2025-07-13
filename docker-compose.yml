@@ -1,0 +1,13 @@
+services:
+  trackoss:
+    build: .
+    ports:
+      - "8080:80"
+    container_name: trackoss-app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
