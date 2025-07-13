@@ -27,15 +27,12 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     if (this.autoUpdate) {
       // Combine both route observables into a single subscription
-      combineLatest([
-        this.routeService.getCurrentRoute(),
-        this.routeService.getCurrentMultiWaypointRoute()
-      ])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(([route, multiRoute]) => {
-        this.routeResult = route;
-        this.multiWaypointRoute = multiRoute;
-      });
+      combineLatest([this.routeService.getCurrentRoute(), this.routeService.getCurrentMultiWaypointRoute()])
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(([route, multiRoute]) => {
+          this.routeResult = route;
+          this.multiWaypointRoute = multiRoute;
+        });
     }
   }
 

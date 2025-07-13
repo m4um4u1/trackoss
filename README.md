@@ -26,8 +26,8 @@ You will need to set up and run the corresponding backend service. Detailed inst
 
 The frontend application is configured to connect to this backend service. The URLs are defined in:
 
-- `src/environments/environments.ts` for development (defaults to `http://localhost:8080/api/tiles`)
-- `src/environments/environment.prod.ts` for production (defaults to `/api/tiles`, assuming same-domain deployment or reverse proxy setup)
+- `src/environments/environments.ts` for development (defaults to `http://localhost:8080/api/map-proxy`)
+- `src/environments/environment.prod.ts` for production (defaults to `/api/map-proxy`, assuming same-domain deployment or reverse proxy setup)
 
 If your backend runs on a different URL during development or in production, you'll need to update these configuration files accordingly. For example, to change the development backend URL:
 
@@ -37,7 +37,7 @@ Modify `src/environments/environments.ts`:
 export const environment = {
   production: false,
   // Update this URL to where your backend is running
-  mapTileProxyBaseUrl: 'http://your-backend-host:your-backend-port/api/tiles',
+  mapTileProxyBaseUrl: 'http://your-backend-host:your-backend-port/api/map-proxy',
 };
 ```
 
@@ -81,13 +81,128 @@ ng test
 
 ## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
+For end-to-end (e2e) testing with Playwright (local development only), run:
 
 ```bash
-ng e2e
+npm run e2e
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+**Additional E2E commands:**
+
+```bash
+npm run e2e:headed    # Run with browser UI visible
+npm run e2e:ui        # Run with Playwright UI for debugging
+npm run e2e:install   # Install Playwright browsers
+```
+
+**Note:** E2E tests require local backend services (map proxy and Valhalla routing service) to be running. These tests are not included in the CI/CD pipeline as they depend on locally hosted services.
+
+For debugging with headed browser:
+
+```bash
+npm run e2e:headed
+```
+
+For interactive UI mode:
+
+```bash
+npm run e2e:ui
+```
+
+## Docker
+
+### Building the Docker image
+
+```bash
+docker build -t trackoss .
+```
+
+### Running with Docker Compose
+
+```bash
+docker-compose up
+```
+
+The application will be available at `http://localhost:8080`.
+
+### Using pre-built images
+
+Pull the latest image from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/m4um4u1/trackoss:latest
+docker run -p 8080:80 ghcr.io/m4um4u1/trackoss:latest
+```
+
+### Environment Configuration
+
+The Docker image supports runtime configuration using environment variables:
+
+#### Environment Variables
+
+- **`MAP_TILE_PROXY_BASE_URL`**: URL for the map tile proxy service
+  - Default: `/api/map-proxy`
+  - Example: `http://backend:8080/api/map-proxy`
+
+- **`VALHALLA_URL`**: URL for the Valhalla routing service
+  - Default: `/api/valhalla`
+  - Example: `http://valhalla:8002`
+
+#### Usage Examples
+
+**With Docker run:**
+
+```bash
+docker run -p 8080:80 \
+  -e MAP_TILE_PROXY_BASE_URL="http://my-backend:8080/api/map-proxy" \
+  -e VALHALLA_URL="http://my-valhalla:8002" \
+  ghcr.io/m4um4u1/trackoss:latest
+```
+
+**With Docker Compose:**
+
+```yaml
+services:
+  trackoss:
+    image: ghcr.io/m4um4u1/trackoss:latest
+    ports:
+      - '8080:80'
+    environment:
+      MAP_TILE_PROXY_BASE_URL: 'http://backend:8080/api/map-proxy'
+      VALHALLA_URL: 'http://valhalla:8002'
+```
+
+**For same-domain deployment with reverse proxy:**
+
+```bash
+docker run -p 8080:80 \
+  -e MAP_TILE_PROXY_BASE_URL="/api/map-proxy" \
+  -e VALHALLA_URL="/api/valhalla" \
+  ghcr.io/m4um4u1/trackoss:latest
+```
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration:
+
+### Pull Request Testing
+
+- **Unit Tests**: Jest tests with coverage reporting
+- **Code Quality**: Prettier formatting checks and build verification
+
+### Main Branch Build
+
+- **Automated Testing**: Unit tests run on every push to main
+- **Docker Build**: Automatic Docker image build and push to GitHub Container Registry
+- **Image Tags**:
+  - `latest` for the most recent main branch build
+  - `main-<commit-sha>` for specific commits
+  - Available at `ghcr.io/m4um4u1/trackoss`
+
+### Manual Builds
+
+- Workflow dispatch available for manual Docker builds
+- Configurable tags and push options
 
 ## Additional Resources
 

@@ -52,3 +52,4 @@ README.md
 # Docker files
 Dockerfile
 .dockerignore
+# Keep docker-entrypoint.sh - it's needed for the build

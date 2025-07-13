@@ -90,26 +90,27 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
       }
 
       // Calculate the route
-      this.routeSubscription = this.routeService.calculateRoute(startCoords, endCoords, this.routeOptions)
+      this.routeSubscription = this.routeService
+        .calculateRoute(startCoords, endCoords, this.routeOptions)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-        next: (routeResult: RouteResult) => {
-          this.isCalculating = false;
-          this.successMessage = 'Route calculated successfully!';
-          this.routeCalculated.emit(routeResult);
+          next: (routeResult: RouteResult) => {
+            this.isCalculating = false;
+            this.successMessage = 'Route calculated successfully!';
+            this.routeCalculated.emit(routeResult);
 
-          // Clear success message after 3 seconds
-          setTimeout(() => {
-            this.successMessage = '';
-          }, 3000);
-        },
-        error: (error) => {
-          this.isCalculating = false;
-          this.errorMessage = 'Failed to calculate route. Please try again.';
-          this.error.emit(error.message || 'Route calculation failed');
-          console.error('Route calculation error:', error);
-        },
-      });
+            // Clear success message after 3 seconds
+            setTimeout(() => {
+              this.successMessage = '';
+            }, 3000);
+          },
+          error: (error) => {
+            this.isCalculating = false;
+            this.errorMessage = 'Failed to calculate route. Please try again.';
+            this.error.emit(error.message || 'Route calculation failed');
+            console.error('Route calculation error:', error);
+          },
+        });
     });
   }
 

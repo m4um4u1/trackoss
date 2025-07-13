@@ -2,11 +2,14 @@ services:
   trackoss:
     build: .
     ports:
-      - "8080:80"
+      - '8080:80'
     container_name: trackoss-app
     restart: unless-stopped
+    environment:
+      MAP_TILE_PROXY_BASE_URL: 'http://backend:8080/api/map-proxy'
+      VALHALLA_URL: 'http://valhalla:8002'
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost/']
       interval: 30s
       timeout: 10s
       retries: 3

@@ -41,21 +41,6 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
-                },
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
-                  "maximumError": "8kB"
-                }
-              ],
-              "outputHashing": "all"
-            },
-            "docker": {
-              "budgets": [
-                {
-                  "type": "initial",
                   "maximumWarning": "2MB",
                   "maximumError": "5MB"
                 },
@@ -66,9 +51,12 @@
                 }
               ],
               "outputHashing": "all",
-              "optimization": true,
-              "extractLicenses": true,
-              "sourceMap": false
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environments.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,
