@@ -1,13 +1,4 @@
-import {
-  Component,
-  OnInit,
-  Input,
-  Output,
-  EventEmitter,
-  OnChanges,
-  SimpleChanges,
-  OnDestroy,
-} from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
 import { Map as MapLibreMap, Marker, LngLatBounds } from 'maplibre-gl';
 import { MapService } from '../services/map.service';
 import { RouteService } from '../services/route.service';
@@ -102,19 +93,16 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.map) return;
 
     // Combine both route observables into a single subscription
-    combineLatest([
-      this.routeService.getCurrentRoute(),
-      this.routeService.getCurrentMultiWaypointRoute()
-    ])
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: ([routeResult, multiWaypointRoute]) => {
-        this.handleRouteUpdates(routeResult, multiWaypointRoute);
-      },
-      error: (error) => {
-        console.error('Error in route subscriptions:', error);
-      }
-    });
+    combineLatest([this.routeService.getCurrentRoute(), this.routeService.getCurrentMultiWaypointRoute()])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ([routeResult, multiWaypointRoute]) => {
+          this.handleRouteUpdates(routeResult, multiWaypointRoute);
+        },
+        error: (error) => {
+          console.error('Error in route subscriptions:', error);
+        },
+      });
   }
 
   /**
@@ -207,7 +195,6 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
 
     // Update the view if needed
     if (needsViewUpdate) {
-
       if (this.enableWaypointMode && this.waypoints && this.waypoints.length > 0) {
         // Handle waypoints mode with waypoints
         this.updateMapViewForWaypoints();
@@ -348,7 +335,7 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
                 this.map.fitBounds(bounds, {
                   padding: 60,
                   maxZoom: 16,
-                  duration: 1000 // Add smooth animation
+                  duration: 1000, // Add smooth animation
                 });
               } catch (error) {
                 console.warn('Error fitting bounds, falling back to center:', error);

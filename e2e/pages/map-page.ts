@@ -349,6 +349,24 @@ export class MapPage extends BasePage {
   }
 
   /**
+   * Wait for and capture route success message before it disappears
+   */
+  async waitForAndGetRouteSuccessMessage(): Promise<string> {
+    try {
+      // Wait for success message to appear
+      const successMessage = this.page.locator('.success-message .text-success');
+      await successMessage.waitFor({ state: 'visible', timeout: 10000 });
+
+      // Capture the message immediately
+      const messageText = await successMessage.textContent();
+      return messageText || '';
+    } catch (error) {
+      // If success message doesn't appear, return empty string
+      return '';
+    }
+  }
+
+  /**
    * Get route success message
    */
   async getRouteSuccessMessage(): Promise<string> {

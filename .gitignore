@@ -38,6 +38,8 @@ yarn-error.log
 testem.log
 /typings
 .env
+.env.local
+.env.*.local
 
 # Environment specific secrets
 

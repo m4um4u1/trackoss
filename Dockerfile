@@ -10,8 +10,8 @@ RUN npm ci --only=production=false
 
 COPY . .
 
-# Build the application for production with docker-specific configuration
-RUN npm run build -- --configuration=docker
+# Build the application with production environment
+RUN npm run build -- --configuration=production
 
 FROM docker.io/library/nginx:alpine AS production
 
@@ -21,6 +21,16 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built application from build stage
 COPY --from=build /app/dist/trackoss/browser /usr/share/nginx/html
 
+# Copy and set up the entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Set default environment variables
+ENV MAP_TILE_PROXY_BASE_URL="/api/map-proxy"
+ENV VALHALLA_URL="/api/valhalla"
+
 EXPOSE 80
 
+# Use the entrypoint script
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
