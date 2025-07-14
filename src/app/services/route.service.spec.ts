@@ -1,14 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { RouteService } from './route.service';
+import { ConfigService } from './config.service';
 import { Coordinates } from '../models/coordinates';
-import { RouteResult, RouteOptions, RoutePoint, MultiWaypointRoute } from '../models/route';
+import { RouteOptions, RoutePoint } from '../models/route';
 import { environment } from '../../environments/environments';
+import { of } from 'rxjs';
 
 describe('RouteService', () => {
   let service: RouteService;
   let httpMock: HttpTestingController;
+  let configService: jest.Mocked<ConfigService>;
 
   const mockCoordinates: Coordinates = { lat: 52.520008, lon: 13.404954 };
   const mockEndCoordinates: Coordinates = { lat: 52.516275, lon: 13.377704 };
@@ -34,30 +37,6 @@ describe('RouteService', () => {
     },
     shape: 'u{~vFvyys@fS]',
   };
-
-  const mockRouteResult: RouteResult = {
-    startPoint: mockCoordinates,
-    endPoint: mockEndCoordinates,
-    routeData: {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: { color: '#007cbf', width: 4 },
-          geometry: {
-            type: 'LineString',
-            coordinates: [
-              [13.404954, 52.520008],
-              [13.377704, 52.516275],
-            ],
-          },
-        },
-      ],
-    },
-    distance: 1.0,
-    duration: 300,
-  };
-
   const mockWaypoints: RoutePoint[] = [
     {
       coordinates: mockCoordinates,
@@ -83,11 +62,26 @@ describe('RouteService', () => {
   ];
 
   beforeEach(() => {
+    const configServiceSpy = {
+      loadConfig: jest.fn().mockReturnValue(
+        of({
+          mapTileProxyBaseUrl: 'http://test-config.com/api/map-proxy',
+          valhallaUrl: 'http://test-config.com/valhalla',
+        }),
+      ),
+    };
+
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), RouteService],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        RouteService,
+        { provide: ConfigService, useValue: configServiceSpy },
+      ],
     });
     service = TestBed.inject(RouteService);
     httpMock = TestBed.inject(HttpTestingController);
+    configService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
   });
 
   afterEach(() => {
@@ -96,6 +90,63 @@ describe('RouteService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  describe('Environment Configuration Tests', () => {
+    it('should use environment URLs in development mode', () => {
+      // Mock development environment
+      const originalEnv = environment.production;
+      const originalUseConfig = environment.useConfigService;
+      (environment as any).production = false;
+      (environment as any).useConfigService = false;
+
+      service.calculateRoute(mockCoordinates, mockEndCoordinates, mockRouteOptions).subscribe();
+
+      const req = httpMock.expectOne((req) => req.url.includes(`${environment.valhallaUrl}/route`));
+      expect(req.request.method).toBe('GET');
+      req.flush(mockValhallaResponse);
+
+      // Restore original environment
+      (environment as any).production = originalEnv;
+      (environment as any).useConfigService = originalUseConfig;
+    });
+
+    it('should use ConfigService URLs in production mode', () => {
+      // Mock production environment
+      const originalEnv = environment.production;
+      const originalUseConfig = environment.useConfigService;
+      (environment as any).production = true;
+      (environment as any).useConfigService = true;
+
+      service.calculateRoute(mockCoordinates, mockEndCoordinates, mockRouteOptions).subscribe();
+
+      expect(configService.loadConfig).toHaveBeenCalled();
+      const req = httpMock.expectOne((req) => req.url.includes('http://test-config.com/valhalla/route'));
+      expect(req.request.method).toBe('GET');
+      req.flush(mockValhallaResponse);
+
+      // Restore original environment
+      (environment as any).production = originalEnv;
+      (environment as any).useConfigService = originalUseConfig;
+    });
+
+    it('should use ConfigService for multi-waypoint routes in production', () => {
+      // Mock production environment
+      const originalEnv = environment.production;
+      const originalUseConfig = environment.useConfigService;
+      (environment as any).production = true;
+      (environment as any).useConfigService = true;
+
+      service.calculateMultiWaypointRoute(mockWaypoints, mockRouteOptions).subscribe();
+
+      expect(configService.loadConfig).toHaveBeenCalled();
+      const req = httpMock.expectOne((req) => req.url.includes('http://test-config.com/valhalla/route'));
+      req.flush(mockValhallaResponse);
+
+      // Restore original environment
+      (environment as any).production = originalEnv;
+      (environment as any).useConfigService = originalUseConfig;
+    });
   });
 
   it('should calculate route between two points', () => {
@@ -513,14 +564,6 @@ describe('RouteService', () => {
 
     it('should handle clearing routes correctly', () => {
       // First set some routes
-      const mockRoute = {
-        startPoint: mockCoordinates,
-        endPoint: mockEndCoordinates,
-        distance: 5.75,
-        duration: 7320,
-        data: { type: 'FeatureCollection' as const, features: [] as any[] },
-      };
-
       service.calculateRoute(mockCoordinates, mockEndCoordinates).subscribe();
       const req = httpMock.expectOne((request) => request.url.startsWith(`${environment.valhallaUrl}/route`));
       req.flush(mockValhallaResponse);

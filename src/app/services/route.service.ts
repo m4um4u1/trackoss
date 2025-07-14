@@ -1,35 +1,24 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
-import { Map as MapLibreMap, GeoJSONSource } from 'maplibre-gl';
+import { BehaviorSubject, Observable, of, switchMap } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import { Coordinates } from '../models/coordinates';
-import { RouteData, RouteResult, RouteOptions, MultiWaypointRoute, RoutePoint, RouteLeg } from '../models/route';
+import { MultiWaypointRoute, RouteData, RouteLeg, RouteOptions, RoutePoint, RouteResult } from '../models/route';
 import { environment } from '../../environments/environments';
+import { ConfigService } from './config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class RouteService {
-  private routingBaseUrl: string = environment.valhallaUrl + '/route';
   private currentRoute$ = new BehaviorSubject<RouteResult | null>(null);
   private currentMultiWaypointRoute$ = new BehaviorSubject<MultiWaypointRoute | null>(null);
 
-  constructor(private http: HttpClient) {}
-
-  /**
-   * Get the current active route as an observable
-   */
-  getCurrentRoute(): Observable<RouteResult | null> {
-    return this.currentRoute$.asObservable();
-  }
-
-  /**
-   * Get the current active multi-waypoint route as an observable
-   */
-  getCurrentMultiWaypointRoute(): Observable<MultiWaypointRoute | null> {
-    return this.currentMultiWaypointRoute$.asObservable();
-  }
+  constructor(
+    private http: HttpClient,
+    private configService: ConfigService,
+  ) {}
 
   /**
    * Calculate a route between two points
@@ -47,9 +36,11 @@ export class RouteService {
       bicycle_type: bicycleType,
     };
 
-    const url = `${this.routingBaseUrl}?json=${encodeURIComponent(JSON.stringify(requestBody))}`;
-
-    return this.http.get(url).pipe(
+    return this.getRoutingBaseUrl().pipe(
+      switchMap((baseUrl) => {
+        const url = `${baseUrl}?json=${encodeURIComponent(JSON.stringify(requestBody))}`;
+        return this.http.get(url);
+      }),
       map((response: any) => {
         const routeResult = this.processRouteResponse(start, end, response, options);
         this.currentRoute$.next(routeResult);
@@ -60,6 +51,20 @@ export class RouteService {
         throw error;
       }),
     );
+  }
+
+  /**
+   * Get the current active route as an observable
+   */
+  getCurrentRoute(): Observable<RouteResult | null> {
+    return this.currentRoute$.asObservable();
+  }
+
+  /**
+   * Get the current active multi-waypoint route as an observable
+   */
+  getCurrentMultiWaypointRoute(): Observable<MultiWaypointRoute | null> {
+    return this.currentMultiWaypointRoute$.asObservable();
   }
 
   /**
@@ -83,9 +88,11 @@ export class RouteService {
       bicycle_type: bicycleType,
     };
 
-    const url = `${this.routingBaseUrl}?json=${encodeURIComponent(JSON.stringify(requestBody))}`;
-
-    return this.http.get(url).pipe(
+    return this.getRoutingBaseUrl().pipe(
+      switchMap((baseUrl) => {
+        const url = `${baseUrl}?json=${encodeURIComponent(JSON.stringify(requestBody))}`;
+        return this.http.get(url);
+      }),
       map((response: any) => {
         const multiWaypointRoute = this.processMultiWaypointRouteResponse(waypoints, response, options);
         this.currentMultiWaypointRoute$.next(multiWaypointRoute);
@@ -96,6 +103,17 @@ export class RouteService {
         throw error;
       }),
     );
+  }
+
+  /**
+   * Get the routing base URL based on environment configuration
+   */
+  private getRoutingBaseUrl(): Observable<string> {
+    if (environment.production && environment.useConfigService) {
+      return this.configService.loadConfig().pipe(map((config) => `${config.valhallaUrl}/route`));
+    } else {
+      return of(`${environment.valhallaUrl}/route`);
+    }
   }
 
   /**

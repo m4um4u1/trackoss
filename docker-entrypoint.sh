@@ -10,26 +10,41 @@ echo "Starting trackoss container..."
 echo "Map Tile Proxy Base URL: $MAP_TILE_PROXY_BASE_URL"
 echo "Valhalla URL: $VALHALLA_URL"
 
-# Find all JavaScript files in the nginx html directory
-JS_FILES=$(find /usr/share/nginx/html -name "*.js" -type f)
+# Path to the configuration file
+CONFIG_FILE="/usr/share/nginx/html/assets/config.json"
 
-echo "🔧 Configuring environment variables in application files..."
+echo "🔧 Configuring runtime environment variables..."
 
-# Replace placeholders with actual environment variable values
-for file in $JS_FILES; do
-    if [ -f "$file" ]; then
-        # Use sed to replace placeholders with environment variable values
-        # We need to escape special characters in URLs for sed
-        MAP_TILE_PROXY_BASE_URL_ESCAPED=$(echo "$MAP_TILE_PROXY_BASE_URL" | sed 's/[[\.*^$()+?{|]/\\&/g')
-        VALHALLA_URL_ESCAPED=$(echo "$VALHALLA_URL" | sed 's/[[\.*^$()+?{|]/\\&/g')
+# Replace placeholders in config.json with actual environment variable values
+if [ -f "$CONFIG_FILE" ]; then
+    # Create a temporary file for the replacement
+    TEMP_FILE=$(mktemp)
 
-        sed -i "s|__MAP_TILE_PROXY_BASE_URL__|$MAP_TILE_PROXY_BASE_URL_ESCAPED|g" "$file"
-        sed -i "s|__VALHALLA_URL__|$VALHALLA_URL_ESCAPED|g" "$file"
-    fi
-done
+    # Replace placeholders with actual values using sed
+    sed "s|__MAP_TILE_PROXY_BASE_URL__|$MAP_TILE_PROXY_BASE_URL|g" "$CONFIG_FILE" | \
+    sed "s|__VALHALLA_URL__|$VALHALLA_URL|g" > "$TEMP_FILE"
 
-echo "Environment configuration complete!"
-echo "Starting nginx server..."
+    # Move the temporary file back to the original location
+    mv "$TEMP_FILE" "$CONFIG_FILE"
+
+    echo "✅ Configuration file updated:"
+    cat "$CONFIG_FILE"
+else
+    echo "⚠️  Configuration file not found: $CONFIG_FILE"
+    echo "Creating default configuration..."
+
+    # Create the assets directory if it doesn't exist
+    mkdir -p "$(dirname "$CONFIG_FILE")"
+
+    cat > "$CONFIG_FILE" << EOF
+{
+  "mapTileProxyBaseUrl": "$MAP_TILE_PROXY_BASE_URL",
+  "valhallaUrl": "$VALHALLA_URL"
+}
+EOF
+fi
+
+echo "🚀 Starting nginx server..."
 
 # Execute the original command (nginx)
 exec "$@"
