@@ -1,12 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { MapService } from './map.service';
+import { ConfigService } from './config.service';
 import { environment } from '../../environments/environments';
+import { of } from 'rxjs';
 
 describe('MapService', () => {
   let service: MapService;
   let httpMock: HttpTestingController;
+  let configService: jest.Mocked<ConfigService>;
 
   const mockStyleResponse = {
     version: 8,
@@ -16,11 +19,26 @@ describe('MapService', () => {
   };
 
   beforeEach(() => {
+    const configServiceSpy = {
+      loadConfig: jest.fn().mockReturnValue(
+        of({
+          mapTileProxyBaseUrl: 'http://test-config.com/api/map-proxy',
+          valhallaUrl: 'http://test-config.com/valhalla',
+        }),
+      ),
+    };
+
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), MapService],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        MapService,
+        { provide: ConfigService, useValue: configServiceSpy },
+      ],
     });
     service = TestBed.inject(MapService);
     httpMock = TestBed.inject(HttpTestingController);
+    configService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
   });
 
   afterEach(() => {
@@ -29,6 +47,47 @@ describe('MapService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  describe('Environment Configuration Tests', () => {
+    it('should use environment URLs in development mode', () => {
+      // Mock development environment
+      const originalEnv = environment.production;
+      const originalUseConfig = environment.useConfigService;
+      (environment as any).production = false;
+      (environment as any).useConfigService = false;
+
+      const style = 'outdoor';
+      service.getMapTiles(style).subscribe();
+
+      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockStyleResponse);
+
+      // Restore original environment
+      (environment as any).production = originalEnv;
+      (environment as any).useConfigService = originalUseConfig;
+    });
+
+    it('should use ConfigService URLs in production mode', () => {
+      // Mock production environment
+      const originalEnv = environment.production;
+      const originalUseConfig = environment.useConfigService;
+      (environment as any).production = true;
+      (environment as any).useConfigService = true;
+
+      const style = 'outdoor';
+      service.getMapTiles(style).subscribe();
+
+      expect(configService.loadConfig).toHaveBeenCalled();
+      const req = httpMock.expectOne(`http://test-config.com/api/map-proxy/${style}/style.json`);
+      expect(req.request.method).toBe('GET');
+      req.flush(mockStyleResponse);
+
+      // Restore original environment
+      (environment as any).production = originalEnv;
+      (environment as any).useConfigService = originalUseConfig;
+    });
   });
 
   it('should get map tiles for outdoor style', () => {
