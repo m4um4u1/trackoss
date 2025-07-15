@@ -1,5 +1,168 @@
-.container-fluid,
-.row,
-.col {
-  height: 95vh;
+// CSS Custom Properties for dynamic values
+:host {
+  --mobile-sidepanel-width: 85%;
+  --navbar-height: 56px;
+  --toggle-btn-size: 48px;
+}
+
+// Toggle button styles
+.toggle-btn {
+  width: var(--toggle-btn-size);
+  height: var(--toggle-btn-size);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  i {
+    transition: transform 0.2s ease;
+  }
+
+  // Mobile positioning
+  &.mobile-toggle {
+    position: fixed;
+    top: 70px;
+    left: 15px;
+    z-index: 1050;
+  }
+
+  // Desktop positioning
+  &.desktop-toggle {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    z-index: 1000;
+  }
+}
+
+// Backdrop styles
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+}
+
+// Sidepanel container styles
+.sidepanel-container {
+  background-color: white;
+  border-right: 1px solid #dee2e6;
+  scroll-behavior: smooth;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  // Mobile styles
+  &.mobile-sidepanel {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    width: var(--mobile-sidepanel-width);
+    max-width: 400px;
+    height: calc(100vh - var(--navbar-height));
+    z-index: 1045;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+
+    &.closed {
+      transform: translateX(-100%);
+    }
+
+    &.open {
+      transform: translateX(0);
+    }
+  }
+
+  // Desktop/Tablet styles
+  &.desktop-sidepanel {
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: all 0.3s ease;
+
+    &.open {
+      min-width: 320px;
+      padding-left: 0;
+      padding-right: 0;
+      height: 100vh;
+    }
+
+    &.closed {
+      display: none;
+    }
+
+    &.col-3,
+    &.col-4 {
+      padding-left: 0;
+      padding-right: 0;
+      height: 100vh;
+    }
+
+    // Ensure content doesn't overflow on narrow widths
+    .container-fluid {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+
+      @media (min-width: 1200px) {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
+  }
+}
+
+// Map container styles
+.map-container {
+  // Mobile styles
+  &.mobile-map {
+    position: fixed;
+    top: var(--navbar-height);
+    width: 100%;
+    height: calc(100vh - var(--navbar-height));
+    z-index: 1;
+  }
+
+  // Desktop/Tablet styles
+  &.desktop-map {
+    padding-left: 0;
+    padding-right: 0;
+    height: 100vh;
+
+    &.col,
+    &.col-12 {
+      padding-left: 0;
+      padding-right: 0;
+      height: 100vh;
+    }
+  }
+
+  // Ensure the map component inside takes full dimensions
+  app-libre-map {
+    display: block;
+    width: 100%;
+    height: 100%;
+
+    // Ensure the MapLibre map container gets proper dimensions
+    mgl-map {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    // Target the actual map canvas
+    #map {
+      width: 100% !important;
+      height: 100% !important;
+    }
+  }
 }

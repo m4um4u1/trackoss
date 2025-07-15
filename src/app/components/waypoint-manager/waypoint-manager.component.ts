@@ -1,19 +1,42 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RoutePoint, MultiWaypointRoute } from '../../models/route';
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckCircle,
+  Info,
+  List,
+  Loader2,
+  LucideAngularModule,
+  Plus,
+  Route,
+  ToggleLeft,
+  Trash2,
+} from 'lucide-angular';
+import { MultiWaypointRoute, RoutePoint } from '../../models/route';
 import { Coordinates } from '../../models/coordinates';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environments';
 
 @Component({
   selector: 'app-waypoint-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './waypoint-manager.component.html',
   styleUrls: ['./waypoint-manager.component.scss'],
 })
 export class WaypointManagerComponent {
+  // Lucide icons
+  readonly RouteIcon = Route;
+  readonly PlusIcon = Plus;
+  readonly Loader2Icon = Loader2;
+  readonly InfoIcon = Info;
+  readonly ListIcon = List;
+  readonly ArrowUpIcon = ArrowUp;
+  readonly ArrowDownIcon = ArrowDown;
+  readonly Trash2Icon = Trash2;
+  readonly CheckCircleIcon = CheckCircle;
+  readonly ToggleLeftIcon = ToggleLeft;
+
   @Input() waypoints: RoutePoint[] = [];
   @Input() enableWaypointMode: boolean = false;
   @Input() multiWaypointRoute: MultiWaypointRoute | null = null;

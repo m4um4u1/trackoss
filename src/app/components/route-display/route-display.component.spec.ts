@@ -82,11 +82,12 @@ describe('RouteDisplayComponent', () => {
     component.routeResult = mockRouteResult;
     fixture.detectChanges();
 
-    const routeDisplay = fixture.nativeElement.querySelector('.route-display');
+    const routeDisplay = fixture.nativeElement.querySelector('.card');
     expect(routeDisplay).toBeTruthy();
 
-    const distanceElement = fixture.nativeElement.querySelector('.route-detail .value');
-    expect(distanceElement.textContent).toContain('1 km 500 m');
+    const distanceElements = fixture.nativeElement.querySelectorAll('.text-dark');
+    const distanceValue = Array.from(distanceElements).find((el: any) => el.textContent.includes('1 km 500 m'));
+    expect(distanceValue).toBeTruthy();
   });
 
   it('should display no route message when no route is available', () => {
@@ -123,13 +124,13 @@ describe('RouteDisplayComponent', () => {
     component.showActions = true;
     fixture.detectChanges();
 
-    const actionsElement = fixture.nativeElement.querySelector('.route-actions');
+    const actionsElement = fixture.nativeElement.querySelector('.d-flex.gap-2.mt-3');
     expect(actionsElement).toBeTruthy();
 
     component.showActions = false;
     fixture.detectChanges();
 
-    const hiddenActionsElement = fixture.nativeElement.querySelector('.route-actions');
+    const hiddenActionsElement = fixture.nativeElement.querySelector('.d-flex.gap-2.mt-3');
     expect(hiddenActionsElement).toBeFalsy();
   });
 

@@ -1,24 +1,67 @@
-<div class="container-fluid h-100">
-  <div class="row flex-grow-1">
-    <div class="col-md-3 col-12 m-0 p-0">
-      <app-map-sidepanel
-        [waypoints]="currentWaypoints"
-        [enableWaypointMode]="enableWaypointMode"
-        (routePointsReady)="onRoutePointsUpdated($event)"
-        (routeCalculated)="onRouteCalculated($event)"
-        (multiWaypointRouteCalculated)="onMultiWaypointRouteCalculated($event)"
-        (waypointsChanged)="onWaypointsChanged($event)"
-        (waypointModeToggled)="onWaypointModeToggled($event)"
-      />
-    </div>
-    <div class="col-md-9 col-12 m-0 p-0">
-      <app-libre-map
-        [startPoint]="currentStartPoint"
-        [endPoint]="currentEndPoint"
-        [waypoints]="currentWaypoints"
-        [enableWaypointMode]="enableWaypointMode"
-        (waypointsChanged)="onWaypointsChanged($event)"
-      />
+<div
+  [class.desktop-mode]="!isMobile && !isTablet"
+  [class.mobile-mode]="isMobile"
+  [class.sidepanel-closed]="!isSidepanelOpen"
+  [class.sidepanel-open]="isSidepanelOpen"
+  [class.tablet-mode]="isTablet"
+  class="position-relative vh-100 overflow-hidden"
+>
+  <!-- Toggle Button (Mobile and Desktop) -->
+  <button
+    (click)="toggleSidepanel()"
+    [attr.aria-expanded]="isSidepanelOpen"
+    [attr.aria-label]="isSidepanelOpen ? 'Close sidepanel' : 'Open sidepanel'"
+    [class.desktop-toggle]="!isMobile"
+    [class.mobile-toggle]="isMobile"
+    class="btn btn-light shadow-sm d-flex align-items-center justify-content-center toggle-btn"
+    title="Toggle sidepanel"
+  >
+    <lucide-icon [img]="ColumnsIcon" size="20"></lucide-icon>
+  </button>
+
+  <!-- Backdrop for mobile only -->
+  <div (click)="onBackdropClick()" *ngIf="isMobile && isSidepanelOpen" class="backdrop"></div>
+
+  <div class="container-fluid h-100 p-0">
+    <div class="row g-0 h-100 d-flex">
+      <!-- Sidepanel -->
+      <div
+        (touchmove)="onSidepanelTouchMove($event)"
+        [class.closed]="!isSidepanelOpen"
+        [class.col-3]="!isMobile && isSidepanelOpen && !isTablet"
+        [class.col-4]="!isMobile && isSidepanelOpen && isTablet"
+        [class.desktop-sidepanel]="!isMobile"
+        [class.mobile-sidepanel]="isMobile"
+        [class.open]="isSidepanelOpen"
+        class="sidepanel-container"
+      >
+        <app-map-sidepanel
+          (multiWaypointRouteCalculated)="onMultiWaypointRouteCalculated($event)"
+          (routeCalculated)="onRouteCalculated($event)"
+          (routePointsReady)="onRoutePointsUpdated($event)"
+          (waypointModeToggled)="onWaypointModeToggled($event)"
+          (waypointsChanged)="onWaypointsChanged($event)"
+          [enableWaypointMode]="enableWaypointMode"
+          [waypoints]="currentWaypoints"
+        />
+      </div>
+
+      <!-- Map Container -->
+      <div
+        [class.col-12]="!isMobile && !isSidepanelOpen"
+        [class.col]="!isMobile && isSidepanelOpen"
+        [class.desktop-map]="!isMobile"
+        [class.mobile-map]="isMobile"
+        class="map-container"
+      >
+        <app-libre-map
+          (waypointsChanged)="onWaypointsChanged($event)"
+          [enableWaypointMode]="enableWaypointMode"
+          [endPoint]="currentEndPoint"
+          [startPoint]="currentStartPoint"
+          [waypoints]="currentWaypoints"
+        />
+      </div>
     </div>
   </div>
 </div>

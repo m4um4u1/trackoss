@@ -1,1 +1,39 @@
 /* You can add global styles to this file, and also import other style files */
+
+// Prevent horizontal scroll
+body {
+  overflow-x: hidden;
+}
+
+// Mobile-specific improvements
+@media (max-width: 767.98px) {
+  // Improve touch targets globally
+  button,
+  .btn,
+  input[type='button'],
+  input[type='submit'] {
+    min-height: 44px;
+  }
+
+  // Better form inputs (prevent iOS zoom)
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+// Tablet adjustments
+@media (min-width: 768px) and (max-width: 991.98px) {
+  button,
+  .btn {
+    min-height: 40px;
+  }
+}
+
+// Smooth transitions for better UX
+* {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}

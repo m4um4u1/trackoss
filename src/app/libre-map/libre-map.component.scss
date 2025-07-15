@@ -76,3 +76,50 @@ mgl-map {
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
+
+// Mobile-specific map control improvements (MapLibre specific styles)
+@media (max-width: 767.98px) {
+  :host ::ng-deep .maplibregl-ctrl-group {
+    margin: 15px;
+
+    button {
+      height: 48px; // Larger touch targets for mobile
+      width: 48px;
+      font-size: 1.4em;
+
+      &.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon,
+      &.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon,
+      &.maplibregl-ctrl-compass .maplibregl-ctrl-icon,
+      &.maplibregl-ctrl-geolocate .maplibregl-ctrl-icon {
+        background-size: 70%;
+      }
+    }
+  }
+
+  // Position controls better for mobile
+  :host ::ng-deep .maplibregl-ctrl-top-right {
+    top: 70px; // Below mobile toggle button
+    right: 15px;
+  }
+
+  :host ::ng-deep .maplibregl-ctrl-bottom-left {
+    bottom: 20px;
+    left: 15px;
+  }
+
+  :host ::ng-deep .maplibregl-ctrl-scale {
+    font-size: 1em;
+    padding: 8px 12px;
+  }
+}
+
+// Tablet-specific adjustments
+@media (min-width: 768px) and (max-width: 991.98px) {
+  :host ::ng-deep .maplibregl-ctrl-group {
+    button {
+      height: 44px;
+      width: 44px;
+      font-size: 1.3em;
+    }
+  }
+}
