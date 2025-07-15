@@ -1,18 +1,18 @@
-import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnDestroy } from '@angular/core';
-import { Map as MapLibreMap, Marker, LngLatBounds } from 'maplibre-gl';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { LngLatBounds, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { MapService } from '../services/map.service';
 import { RouteService } from '../services/route.service';
 import { GeolocationService } from '../services/geolocation.service';
 import {
-  MapComponent,
   ControlComponent,
   GeolocateControlDirective,
+  MapComponent,
   NavigationControlDirective,
   ScaleControlDirective,
 } from '@maplibre/ngx-maplibre-gl';
 import { Coordinates } from '../models/coordinates';
-import { RouteResult, RouteOptions, RoutePoint, MultiWaypointRoute } from '../models/route';
-import { Subscription, Subject, combineLatest } from 'rxjs';
+import { MultiWaypointRoute, RouteOptions, RoutePoint, RouteResult } from '../models/route';
+import { combineLatest, Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
@@ -140,6 +140,17 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
 
     // Automatically request user location consent and focus on their location
     this.focusOnUserLocationIfNeeded();
+  }
+
+  public resizeMap(): void {
+    if (this.map) {
+      // Use setTimeout to ensure the container has finished resizing
+      setTimeout(() => {
+        if (this.map) {
+          this.map.resize();
+        }
+      }, 100);
+    }
   }
 
   private updateMarkersAndBounds(changes?: SimpleChanges): void {

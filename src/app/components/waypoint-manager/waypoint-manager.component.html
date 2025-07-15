@@ -2,7 +2,7 @@
   <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0">
-        <i class="fas fa-route me-2"></i>
+        <lucide-icon [img]="RouteIcon" class="me-2" size="18"></lucide-icon>
         Waypoint Manager
       </h5>
       <div class="form-check form-switch">
@@ -37,13 +37,13 @@
             (click)="addWaypoint()"
             [disabled]="!newWaypointText.trim() || isAddingWaypoint"
           >
-            <i class="fas fa-plus" *ngIf="!isAddingWaypoint"></i>
-            <i class="fas fa-spinner fa-spin" *ngIf="isAddingWaypoint"></i>
+            <lucide-icon *ngIf="!isAddingWaypoint" [img]="PlusIcon" size="16"></lucide-icon>
+            <lucide-icon *ngIf="isAddingWaypoint" [img]="Loader2Icon" class="animate-spin" size="16"></lucide-icon>
             Add
           </button>
         </div>
         <div class="form-text">
-          <i class="fas fa-info-circle me-1"></i>
+          <lucide-icon [img]="InfoIcon" class="me-1" size="14"></lucide-icon>
           You can also click on the map to add waypoints
         </div>
       </div>
@@ -52,13 +52,13 @@
       <div class="waypoints-list" *ngIf="waypoints.length > 0">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h6 class="mb-0">
-            <i class="fas fa-list me-2"></i>
+            <lucide-icon [img]="ListIcon" class="me-2" size="16"></lucide-icon>
             Waypoints ({{ waypoints.length }})
           </h6>
           <!-- Total route statistics -->
           <div class="route-totals" *ngIf="multiWaypointRoute">
             <small class="text-muted">
-              <i class="fas fa-route me-1"></i>
+              <lucide-icon [img]="RouteIcon" class="me-1" size="14"></lucide-icon>
               {{ formatDistance(multiWaypointRoute.totalDistance || 0) }} •
               {{ formatDuration(multiWaypointRoute.totalDuration || 0) }}
             </small>
@@ -89,7 +89,7 @@
                   [disabled]="i === 0"
                   title="Move up"
                 >
-                  <i class="fas fa-arrow-up"></i>
+                  <lucide-icon [img]="ArrowUpIcon" size="14"></lucide-icon>
                 </button>
                 <button
                   class="btn btn-sm btn-outline-secondary me-1"
@@ -97,14 +97,14 @@
                   [disabled]="i === waypoints.length - 1"
                   title="Move down"
                 >
-                  <i class="fas fa-arrow-down"></i>
+                  <lucide-icon [img]="ArrowDownIcon" size="14"></lucide-icon>
                 </button>
                 <button
                   class="btn btn-sm btn-outline-danger"
                   (click)="removeWaypoint(waypoint.id!)"
                   title="Remove waypoint"
                 >
-                  <i class="fas fa-trash"></i>
+                  <lucide-icon [img]="Trash2Icon" size="14"></lucide-icon>
                 </button>
               </div>
             </div>
@@ -114,7 +114,7 @@
           <div class="route-segment" *ngIf="i < waypoints.length - 1 && getRouteLegInfo(i)">
             <div class="segment-line">
               <div class="segment-info">
-                <i class="fas fa-arrow-down text-muted me-1"></i>
+                <lucide-icon [img]="ArrowDownIcon" class="text-muted me-1" size="14"></lucide-icon>
                 <small class="text-muted">
                   {{ formatDistance(getRouteLegInfo(i)!.distance) }} •
                   {{ formatDuration(getRouteLegInfo(i)!.duration) }}
@@ -127,7 +127,7 @@
 
       <!-- Instructions -->
       <div class="alert alert-info mt-3" *ngIf="waypoints.length === 0">
-        <i class="fas fa-info-circle me-2"></i>
+        <lucide-icon [img]="InfoIcon" class="me-2" size="16"></lucide-icon>
         <strong>Getting Started:</strong>
         <ul class="mb-0 mt-2">
           <li>Add waypoints by typing locations above</li>
@@ -138,13 +138,13 @@
       </div>
 
       <div class="alert alert-success mt-3" *ngIf="waypoints.length === 1">
-        <i class="fas fa-check-circle me-2"></i>
+        <lucide-icon [img]="CheckCircleIcon" class="me-2" size="16"></lucide-icon>
         Great! Add one more waypoint to calculate your route.
       </div>
     </div>
 
     <div class="card-body text-center" *ngIf="!enableWaypointMode">
-      <i class="fas fa-toggle-off fa-2x text-muted mb-3"></i>
+      <lucide-icon [img]="ToggleLeftIcon" class="text-muted mb-3" size="48"></lucide-icon>
       <p class="text-muted">Enable waypoint mode to plan routes with multiple stops.</p>
     </div>
   </div>

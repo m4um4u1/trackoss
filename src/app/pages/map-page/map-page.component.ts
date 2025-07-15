@@ -1,18 +1,21 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Columns, LucideAngularModule } from 'lucide-angular';
 import { LibreMapComponent } from '../../libre-map/libre-map.component';
 import { MapSidepanelComponent } from '../../map-sidepanel/map-sidepanel.component';
 import { Coordinates } from '../../models/coordinates';
-import { RoutePoint, RouteResult, MultiWaypointRoute } from '../../models/route';
+import { MultiWaypointRoute, RoutePoint, RouteResult } from '../../models/route';
 import { RouteService } from '../../services/route.service';
 
 @Component({
   selector: 'app-map-page',
-  imports: [LibreMapComponent, MapSidepanelComponent],
+  imports: [CommonModule, LucideAngularModule, LibreMapComponent, MapSidepanelComponent],
   templateUrl: './map-page.component.html',
   styleUrl: './map-page.component.scss',
   standalone: true,
 })
-export class MapPageComponent {
+export class MapPageComponent implements OnInit, OnDestroy {
+  readonly ColumnsIcon = Columns;
   @ViewChild(LibreMapComponent) mapComponent?: LibreMapComponent;
 
   public currentStartPoint?: Coordinates;
@@ -20,7 +23,119 @@ export class MapPageComponent {
   public currentWaypoints: RoutePoint[] = [];
   public enableWaypointMode: boolean = false;
 
-  constructor(private routeService: RouteService) {}
+  // Responsive properties
+  public isMobile: boolean = false;
+  public isTablet: boolean = false;
+  public isSidepanelOpen: boolean = true; // Default to open on desktop
+
+  constructor(
+    private routeService: RouteService,
+    private elementRef: ElementRef,
+  ) {}
+
+  ngOnInit(): void {
+    this.checkScreenSize();
+    this.updateCSSProperties();
+  }
+
+  ngOnDestroy(): void {
+    // Restore body scroll on component destroy
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+  }
+
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any): void {
+    this.checkScreenSize();
+  }
+
+  public toggleSidepanel(): void {
+    this.isSidepanelOpen = !this.isSidepanelOpen;
+    this.handleBodyScroll();
+    this.updateCSSProperties();
+    this.resizeMapAfterToggle();
+  }
+
+  public onBackdropClick(): void {
+    // Only close on backdrop click for mobile (desktop doesn't have backdrop)
+    if (this.isMobile && this.isSidepanelOpen) {
+      this.toggleSidepanel();
+    }
+  }
+
+  public onSidepanelTouchMove(event: TouchEvent): void {
+    // Allow scrolling within the sidepanel but prevent it from propagating to the body
+    if (this.isMobile && this.isSidepanelOpen) {
+      const target = event.currentTarget as HTMLElement;
+      const scrollTop = target.scrollTop;
+      const scrollHeight = target.scrollHeight;
+      const height = target.clientHeight;
+      const deltaY = event.touches[0].clientY;
+
+      // Prevent overscroll at the top and bottom
+      if ((scrollTop === 0 && deltaY > 0) || (scrollTop + height >= scrollHeight && deltaY < 0)) {
+        event.preventDefault();
+      }
+    }
+  }
+
+  private checkScreenSize(): void {
+    const wasMobile = this.isMobile;
+    const wasTablet = this.isTablet;
+
+    // Define breakpoints
+    const width = window.innerWidth;
+    this.isMobile = width < 768; // sm breakpoint
+    this.isTablet = width >= 768 && width < 1200; // md-lg range
+
+    // Handle sidepanel state when switching between screen sizes
+    if (wasMobile && !this.isMobile) {
+      // Switching from mobile to tablet/desktop - open sidepanel
+      this.isSidepanelOpen = true;
+    } else if (!wasMobile && this.isMobile) {
+      // Switching from tablet/desktop to mobile - close sidepanel
+      this.isSidepanelOpen = false;
+    }
+
+    this.handleBodyScroll();
+    this.updateCSSProperties();
+
+    // Resize map when screen size changes
+    this.resizeMapAfterToggle();
+  }
+
+  private updateCSSProperties(): void {
+    const hostElement = this.elementRef.nativeElement;
+
+    // Only set mobile sidepanel width - desktop/tablet use grid system
+    if (this.isMobile) {
+      hostElement.style.setProperty('--mobile-sidepanel-width', '85%');
+    }
+  }
+
+  private resizeMapAfterToggle(): void {
+    // Resize the map after sidepanel toggle to ensure proper dimensions
+    if (this.mapComponent) {
+      this.mapComponent.resizeMap();
+    }
+  }
+
+  private handleBodyScroll(): void {
+    if (this.isMobile) {
+      if (this.isSidepanelOpen) {
+        // Prevent body scroll when sidepanel is open
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+      } else {
+        // Restore body scroll when sidepanel is closed
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+      }
+    }
+  }
 
   public onRoutePointsUpdated(points: { start?: Coordinates; end?: Coordinates }): void {
     this.currentStartPoint = points.start;
