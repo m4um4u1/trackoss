@@ -26,6 +26,7 @@
     <div class="row g-0 h-100 d-flex">
       <!-- Sidepanel -->
       <div
+        (touchstart)="onSidepanelTouchStart($event)"
         (touchmove)="onSidepanelTouchMove($event)"
         [class.closed]="!isSidepanelOpen"
         [class.col-3]="!isMobile && isSidepanelOpen && !isTablet"

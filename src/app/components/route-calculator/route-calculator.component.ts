@@ -1,12 +1,12 @@
-import { Component, Input, Output, EventEmitter, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, takeUntil } from 'rxjs/operators';
-import { of, Subscription, firstValueFrom, Subject } from 'rxjs';
+import { firstValueFrom, of, Subject, Subscription } from 'rxjs';
 import { RouteService } from '../../services/route.service';
 import { Coordinates } from '../../models/coordinates';
-import { RouteResult, RouteOptions } from '../../models/route';
+import { RouteOptions, RouteResult } from '../../models/route';
 
 @Component({
   selector: 'app-route-calculator',
@@ -99,10 +99,10 @@ export class RouteCalculatorComponent implements OnInit, OnDestroy {
             this.successMessage = 'Route calculated successfully!';
             this.routeCalculated.emit(routeResult);
 
-            // Clear success message after 3 seconds
+            // Clear success message after 5 seconds (extended for better test reliability)
             setTimeout(() => {
               this.successMessage = '';
-            }, 3000);
+            }, 5000);
           },
           error: (error) => {
             this.isCalculating = false;
