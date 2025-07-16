@@ -75,12 +75,28 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 
+    // iOS-specific touch improvements
+    touch-action: pan-y;
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+
     &.closed {
       transform: translateX(-100%);
     }
 
     &.open {
       transform: translateX(0);
+    }
+
+    // Content container within mobile sidepanel
+    .container-fluid {
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+      -webkit-transform: translate3d(0, 0, 0);
+      transform: translate3d(0, 0, 0);
     }
   }
 

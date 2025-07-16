@@ -36,10 +36,22 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: ['**/mobile-*.spec.ts', '**/tablet-*.spec.ts'],
     },
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
+      testIgnore: ['**/mobile-*.spec.ts', '**/tablet-*.spec.ts'],
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+      testMatch: ['**/mobile-*.spec.ts'],
+    },
+    {
+      name: 'tablet-chrome',
+      use: { ...devices['iPad Pro'] },
+      testMatch: ['**/tablet-*.spec.ts'],
     },
   ],
 

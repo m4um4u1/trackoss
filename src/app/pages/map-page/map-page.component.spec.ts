@@ -416,6 +416,7 @@ describe('MapPageComponent', () => {
         scrollHeight: 1000,
         clientHeight: 500,
         currentTarget: null as any,
+        _initialTouchY: undefined,
       };
 
       mockTouchEvent = {
@@ -425,11 +426,22 @@ describe('MapPageComponent', () => {
       };
     });
 
+    it('should store initial touch position on touchstart', () => {
+      component.isMobile = true;
+      component.isSidepanelOpen = true;
+      mockTouchEvent.touches = [{ clientY: 150 } as Touch];
+
+      component.onSidepanelTouchStart(mockTouchEvent as TouchEvent);
+
+      expect((mockTarget as any)._initialTouchY).toBe(150);
+    });
+
     it('should prevent overscroll at top on mobile', () => {
       component.isMobile = true;
       component.isSidepanelOpen = true;
       mockTarget.scrollTop = 0;
-      mockTouchEvent.touches = [{ clientY: 50 } as Touch]; // Positive deltaY (scrolling down at top)
+      (mockTarget as any)._initialTouchY = 150;
+      mockTouchEvent.touches = [{ clientY: 200 } as Touch]; // Positive deltaY (scrolling down at top)
 
       component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
 
@@ -439,10 +451,11 @@ describe('MapPageComponent', () => {
     it('should prevent overscroll at bottom on mobile', () => {
       component.isMobile = true;
       component.isSidepanelOpen = true;
-      mockTarget.scrollTop = 500; // scrollTop + clientHeight = scrollHeight
+      mockTarget.scrollTop = 499; // Near bottom (scrollTop + clientHeight >= scrollHeight - 1)
       mockTarget.scrollHeight = 1000;
       mockTarget.clientHeight = 500;
-      mockTouchEvent.touches = [{ clientY: -50 } as Touch]; // Negative deltaY (scrolling up at bottom)
+      (mockTarget as any)._initialTouchY = 150;
+      mockTouchEvent.touches = [{ clientY: 100 } as Touch]; // Negative deltaY (scrolling up at bottom)
 
       component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
 
@@ -453,6 +466,7 @@ describe('MapPageComponent', () => {
       component.isMobile = true;
       component.isSidepanelOpen = true;
       mockTarget.scrollTop = 250; // Middle of scrollable area
+      (mockTarget as any)._initialTouchY = 150;
       mockTouchEvent.touches = [{ clientY: 100 } as Touch];
 
       component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
@@ -476,6 +490,15 @@ describe('MapPageComponent', () => {
       component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
 
       expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
+    });
+
+    it('should not handle touchstart when not on mobile', () => {
+      component.isMobile = false;
+      component.isSidepanelOpen = true;
+
+      component.onSidepanelTouchStart(mockTouchEvent as TouchEvent);
+
+      expect((mockTarget as any)._initialTouchY).toBeUndefined();
     });
   });
 

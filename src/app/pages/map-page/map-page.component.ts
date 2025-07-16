@@ -64,6 +64,16 @@ export class MapPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  public onSidepanelTouchStart(event: TouchEvent): void {
+    // iOS Safari needs a touchstart event to properly recognize scrollable areas
+    // This "primes" the touch events for proper scrolling behavior
+    if (this.isMobile && this.isSidepanelOpen) {
+      // Store initial touch position for better touch handling
+      const touch = event.touches[0];
+      (event.currentTarget as any)._initialTouchY = touch.clientY;
+    }
+  }
+
   public onSidepanelTouchMove(event: TouchEvent): void {
     // Allow scrolling within the sidepanel but prevent it from propagating to the body
     if (this.isMobile && this.isSidepanelOpen) {
@@ -71,11 +81,21 @@ export class MapPageComponent implements OnInit, OnDestroy {
       const scrollTop = target.scrollTop;
       const scrollHeight = target.scrollHeight;
       const height = target.clientHeight;
-      const deltaY = event.touches[0].clientY;
 
-      // Prevent overscroll at the top and bottom
-      if ((scrollTop === 0 && deltaY > 0) || (scrollTop + height >= scrollHeight && deltaY < 0)) {
-        event.preventDefault();
+      // Only prevent default for overscroll situations, not normal scrolling
+      const isScrollable = scrollHeight > height;
+      if (isScrollable) {
+        const touch = event.touches[0];
+        const initialTouchY = (target as any)._initialTouchY || touch.clientY;
+        const deltaY = touch.clientY - initialTouchY;
+
+        // Only prevent overscroll at the very top and bottom
+        const isAtTop = scrollTop <= 0;
+        const isAtBottom = scrollTop + height >= scrollHeight - 1;
+
+        if ((isAtTop && deltaY > 0) || (isAtBottom && deltaY < 0)) {
+          event.preventDefault();
+        }
       }
     }
   }
