@@ -30,7 +30,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   public map?: MapLibreMap;
-  public mapStyleUrl: string = ''; // Declare and initialize the mapStyleUrl property
+  public mapStyleUrl: string = '';
   startPosition: [number, number] = [13.404954, 52.520008];
 
   @Input() startPoint?: Coordinates;
@@ -38,10 +38,11 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   @Input() waypoints?: RoutePoint[];
   @Input() routeOptions?: RouteOptions;
   @Input() showRoute: boolean = true;
-  @Input() enableWaypointMode: boolean = false;
 
   @Output() waypointsChanged = new EventEmitter<RoutePoint[]>();
   @Output() waypointAdded = new EventEmitter<RoutePoint>();
+  @Output() startPointChanged = new EventEmitter<Coordinates>();
+  @Output() endPointChanged = new EventEmitter<Coordinates>();
 
   private startMarker?: Marker;
   private endMarker?: Marker;
@@ -60,12 +61,6 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
     this.loadMapTiles();
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (this.map) {
-      this.updateMarkersAndBounds(changes);
-    }
-  }
-
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -76,58 +71,59 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
     if (this.multiWaypointRouteSubscription) {
       this.multiWaypointRouteSubscription.unsubscribe();
     }
-    this.clearAllMarkers();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (this.map) {
+      this.updateMarkersAndBounds(changes);
+    }
   }
 
   private loadMapTiles(): void {
-    this.mapService.getMapTiles('outdoor').subscribe((style: string) => {
-      // Explicitly define the type of the style parameter
-      this.mapStyleUrl = style; // Assign the fetched style URL to mapStyleUrl
+    this.mapService.getMapTiles('outdoor').subscribe({
+      next: (style) => {
+        this.mapStyleUrl = style;
+      },
+      error: (error) => {
+        console.error('Error loading map tiles:', error);
+      },
     });
   }
 
-  /**
-   * Setup subscriptions to route service observables to automatically display routes
-   */
   private setupRouteSubscriptions(): void {
     if (!this.map) return;
 
-    // Combine both route observables into a single subscription
+    // Subscribe to route updates
     combineLatest([this.routeService.getCurrentRoute(), this.routeService.getCurrentMultiWaypointRoute()])
       .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: ([routeResult, multiWaypointRoute]) => {
-          this.handleRouteUpdates(routeResult, multiWaypointRoute);
-        },
-        error: (error) => {
-          console.error('Error in route subscriptions:', error);
-        },
+      .subscribe(([routeResult, multiWaypointRoute]) => {
+        this.handleRouteUpdates(routeResult, multiWaypointRoute);
       });
   }
 
   /**
-   * Handle route updates based on current mode
+   * Handle route updates for unified routing
    */
   private handleRouteUpdates(routeResult: RouteResult | null, multiWaypointRoute: MultiWaypointRoute | null): void {
     if (!this.map) return;
 
-    if (this.enableWaypointMode) {
-      // Handle waypoint mode
+    // Prioritize multi-waypoint route if waypoints exist
+    if (this.waypoints && this.waypoints.length >= 2) {
       if (multiWaypointRoute) {
         this.routeService.updateMultiWaypointRouteOnMap(this.map, multiWaypointRoute);
       } else {
         this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
       }
-      // Clear normal route when in waypoint mode
+      // Clear simple route when using waypoints
       this.routeService.removeRouteFromMap(this.map, 'route', 'route');
     } else {
-      // Handle normal routing mode
+      // Use simple routing for start/end points only
       if (routeResult) {
         this.routeService.updateRouteOnMap(this.map, routeResult);
       } else {
         this.routeService.removeRouteFromMap(this.map, 'route', 'route');
       }
-      // Clear waypoint route when in normal mode
+      // Clear waypoint route when using simple routing
       this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
     }
   }
@@ -137,14 +133,11 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
     this.updateMarkersAndBounds();
     this.setupMapClickHandler();
     this.setupRouteSubscriptions();
-
-    // Automatically request user location consent and focus on their location
     this.focusOnUserLocationIfNeeded();
   }
 
   public resizeMap(): void {
     if (this.map) {
-      // Use setTimeout to ensure the container has finished resizing
       setTimeout(() => {
         if (this.map) {
           this.map.resize();
@@ -158,31 +151,8 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
 
     let needsViewUpdate = false;
 
-    // Handle waypoint mode changes
-    if (changes && changes['enableWaypointMode']) {
-      if (!this.enableWaypointMode) {
-        // Waypoint mode turned off - clear waypoint markers and routes
-        this.clearWaypointMarkers();
-        if (this.map && this.map.getSource('multi-route')) {
-          this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
-        }
-        // Recreate start/end markers if we have start/end points
-        needsViewUpdate = true;
-      } else {
-        // Waypoint mode turned on - clear normal route markers and routes
-        this.clearStartEndMarkers();
-        if (this.map && this.map.getSource('route')) {
-          this.routeService.removeRouteFromMap(this.map, 'route', 'route');
-        }
-        needsViewUpdate = true;
-      }
-    }
-
-    // Handle waypoints mode
-    if (
-      this.enableWaypointMode &&
-      ((changes && (changes['waypoints'] || changes['enableWaypointMode'])) || (!changes && this.waypoints))
-    ) {
+    // Handle waypoints changes
+    if ((changes && changes['waypoints']) || (!changes && this.waypoints)) {
       this.clearWaypointMarkers();
       if (this.waypoints && this.waypoints.length > 0) {
         this.waypoints.forEach((waypoint) => {
@@ -194,7 +164,6 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
         });
         needsViewUpdate = true;
       } else {
-        // Waypoints were cleared, need to update view to remove routes
         needsViewUpdate = true;
       }
     }
@@ -206,25 +175,17 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
 
     // Update the view if needed
     if (needsViewUpdate) {
-      if (this.enableWaypointMode && this.waypoints && this.waypoints.length > 0) {
-        // Handle waypoints mode with waypoints
+      if (this.waypoints && this.waypoints.length > 0) {
+        // Handle waypoint routing
         this.updateMapViewForWaypoints();
 
         // Calculate and display multi-waypoint route if we have at least 2 waypoints
         if (this.waypoints.length >= 2) {
           this.calculateAndDisplayMultiWaypointRoute();
         }
-      } else if (this.enableWaypointMode && (!this.waypoints || this.waypoints.length === 0)) {
-        // Handle waypoints mode with no waypoints (cleared)
-        // Only clear routes, don't reset map position
-        if (this.map.getSource('multi-route')) {
-          this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
-        }
       } else if (this.startPoint && this.endPoint) {
-        // Handle traditional start/end point mode
-
-        // Create start and end markers
-        this.clearStartEndMarkers(); // Clear existing markers first
+        // Handle simple start/end point routing
+        this.clearStartEndMarkers();
 
         // Create start marker (green)
         this.startMarker = new Marker({ color: '#22c55e' })
@@ -246,44 +207,25 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
           this.calculateAndDisplayRoute();
         }
       } else if (this.startPoint) {
+        // Handle single start point
+        this.clearStartEndMarkers();
+        this.startMarker = new Marker({ color: '#22c55e' })
+          .setLngLat([this.startPoint.lon, this.startPoint.lat])
+          .addTo(this.map!);
         this.map.setCenter([this.startPoint.lon, this.startPoint.lat]);
         this.map.setZoom(12);
       } else if (this.endPoint) {
+        // Handle single end point
+        this.clearStartEndMarkers();
+        this.endMarker = new Marker({ color: '#ef4444' })
+          .setLngLat([this.endPoint.lon, this.endPoint.lat])
+          .addTo(this.map!);
         this.map.setCenter([this.endPoint.lon, this.endPoint.lat]);
         this.map.setZoom(12);
-      } else if (!this.enableWaypointMode && !this.startPoint && !this.endPoint) {
-        // Handle traditional route mode with no points (cleared)
-        // Clear start/end markers and routes
-        this.clearStartEndMarkers();
-        if (this.map.getSource('route')) {
-          this.routeService.removeRouteFromMap(this.map);
-        }
-        if (this.map.getSource('multi-route')) {
-          this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
-        }
-      } else if (!this.enableWaypointMode && (this.startPoint || this.endPoint)) {
-        // Handle case where we have start or end point (but not both) in normal routing mode
-        this.clearStartEndMarkers(); // Clear existing markers first
-
-        if (this.startPoint) {
-          // Create start marker (green)
-          this.startMarker = new Marker({ color: '#22c55e' })
-            .setLngLat([this.startPoint.lon, this.startPoint.lat])
-            .addTo(this.map!);
-        }
-
-        if (this.endPoint) {
-          // Create end marker (red)
-          this.endMarker = new Marker({ color: '#ef4444' })
-            .setLngLat([this.endPoint.lon, this.endPoint.lat])
-            .addTo(this.map!);
-        }
       } else {
-        // Fallback: reset map position only when no specific mode is active
+        // Handle cleared state - no points or waypoints
         this.clearStartEndMarkers();
-        this.map.setCenter(this.startPosition);
-        this.map.setZoom(10);
-        // Clear routes if no points are set
+        this.clearWaypointMarkers();
         if (this.map.getSource('route')) {
           this.routeService.removeRouteFromMap(this.map);
         }
@@ -323,45 +265,31 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
 
     try {
       if (this.waypoints.length === 1) {
-        // For single waypoint, just center on it
+        // Single waypoint - center on it
         const waypoint = this.waypoints[0];
         this.map.setCenter([waypoint.coordinates.lon, waypoint.coordinates.lat]);
         this.map.setZoom(14);
       } else {
-        // For multiple waypoints, calculate bounds
+        // Multiple waypoints - fit bounds to show all
         const bounds = new LngLatBounds();
         this.waypoints.forEach((waypoint) => {
           bounds.extend([waypoint.coordinates.lon, waypoint.coordinates.lat]);
         });
 
-        // Check if bounds are valid (not empty)
-        const sw = bounds.getSouthWest();
-        const ne = bounds.getNorthEast();
-
-        if (sw && ne && sw.lng !== ne.lng && sw.lat !== ne.lat) {
-          // Use requestAnimationFrame to ensure map is ready
-          requestAnimationFrame(() => {
-            if (this.map) {
-              try {
-                this.map.fitBounds(bounds, {
-                  padding: 60,
-                  maxZoom: 16,
-                  duration: 1000, // Add smooth animation
-                });
-              } catch (error) {
-                console.warn('Error fitting bounds, falling back to center:', error);
-                // Fallback: center on first waypoint
-                const firstWaypoint = this.waypoints![0];
-                this.map.setCenter([firstWaypoint.coordinates.lon, firstWaypoint.coordinates.lat]);
-                this.map.setZoom(12);
-              }
-            }
-          });
+        // Check if bounds are valid before fitting
+        if (bounds.getNorthEast() && bounds.getSouthWest()) {
+          if (this.map) {
+            // Fit bounds with padding and max zoom
+            this.map.fitBounds(bounds, {
+              padding: 60,
+              maxZoom: 15,
+            });
+          }
         } else {
-          // Bounds are too small or invalid, center on first waypoint
-          const firstWaypoint = this.waypoints[0];
+          // Fallback: center on first waypoint
+          const firstWaypoint = this.waypoints![0];
           this.map.setCenter([firstWaypoint.coordinates.lon, firstWaypoint.coordinates.lat]);
-          this.map.setZoom(14);
+          this.map.setZoom(12);
         }
       }
     } catch (error) {
@@ -405,16 +333,86 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   /**
-   * Setup map click handler for waypoint mode
+   * Setup map click handler for unified routing
    */
   private setupMapClickHandler(): void {
     if (!this.map) return;
 
     this.map.on('click', (e) => {
-      if (this.enableWaypointMode) {
-        this.addWaypointAtLocation(e.lngLat.lng, e.lngLat.lat);
-      }
+      this.handleMapClick(e.lngLat.lng, e.lngLat.lat);
     });
+  }
+
+  /**
+   * Handle map click for unified routing (start/end points and waypoints)
+   */
+  private handleMapClick(lon: number, lat: number): void {
+    const coordinates: Coordinates = { lat, lon };
+
+    // If we have waypoints, add to waypoints list
+    if (this.waypoints && this.waypoints.length > 0) {
+      this.addWaypointAtLocation(lon, lat);
+      return;
+    }
+
+    // If no start point, set as start
+    if (!this.startPoint) {
+      this.startPointChanged.emit(coordinates);
+      return;
+    }
+
+    // If start point exists but no end point, set as end
+    if (!this.endPoint) {
+      this.endPointChanged.emit(coordinates);
+      return;
+    }
+
+    // If both start and end exist, convert to waypoint mode and add the new point
+    this.convertTraditionalRouteToWaypoints(lon, lat);
+  }
+
+  /**
+   * Convert traditional route (start/end points) to waypoint mode and add new waypoint
+   */
+  private convertTraditionalRouteToWaypoints(lon: number, lat: number): void {
+    if (!this.startPoint || !this.endPoint) {
+      return;
+    }
+
+    // Create waypoints array from existing start/end points
+    const waypoints: RoutePoint[] = [
+      {
+        coordinates: this.startPoint,
+        type: 'start',
+        id: `waypoint-${Date.now()}-start`,
+        order: 0,
+      },
+      {
+        coordinates: this.endPoint,
+        type: 'waypoint',
+        id: `waypoint-${Date.now()}-middle`,
+        order: 1,
+      },
+      {
+        coordinates: { lat, lon },
+        type: 'end',
+        id: `waypoint-${Date.now()}-end`,
+        order: 2,
+      },
+    ];
+
+    // Clear traditional route points
+    this.startPointChanged.emit(undefined as any);
+    this.endPointChanged.emit(undefined as any);
+
+    // Set waypoints and emit change
+    this.waypoints = waypoints;
+    this.waypointsChanged.emit([...waypoints]);
+
+    // Use setTimeout to avoid conflicts with rapid clicks
+    setTimeout(() => {
+      this.updateMarkersAndBounds();
+    }, 10);
   }
 
   /**
@@ -473,8 +471,10 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
    * Clear all waypoint markers
    */
   private clearWaypointMarkers(): void {
-    this.waypointMarkers.forEach((marker) => marker.remove());
-    this.waypointMarkers = [];
+    if (this.waypointMarkers) {
+      this.waypointMarkers.forEach((marker) => marker?.remove?.());
+      this.waypointMarkers = [];
+    }
   }
 
   /**
@@ -496,11 +496,11 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
    */
   private clearAllMarkers(): void {
     if (this.startMarker) {
-      this.startMarker.remove();
+      this.startMarker.remove?.();
       this.startMarker = undefined;
     }
     if (this.endMarker) {
-      this.endMarker.remove();
+      this.endMarker.remove?.();
       this.endMarker = undefined;
     }
     this.clearWaypointMarkers();

@@ -1,20 +1,8 @@
 <div class="container-fluid h-100">
   <div class="row h-100">
     <div class="col-12 d-flex flex-column gap-2 px-2 px-md-3" style="padding-top: 20px">
-      <!-- Waypoint Manager -->
-      <app-waypoint-manager
-        [waypoints]="waypoints"
-        [enableWaypointMode]="enableWaypointMode"
-        [multiWaypointRoute]="currentMultiWaypointRoute"
-        (waypointsChanged)="onWaypointsChanged($event)"
-        (waypointModeToggled)="onWaypointModeToggled($event)"
-        (waypointsCleared)="onWaypointsCleared()"
-        (routeCalculated)="onWaypointRouteCalculated()"
-      >
-      </app-waypoint-manager>
-
-      <!-- Traditional Route Calculator (only show when waypoint mode is disabled) -->
-      <div class="mt-3" *ngIf="!enableWaypointMode">
+      <!-- Traditional Route Calculator (show when no waypoints) -->
+      <div class="mt-3" *ngIf="!waypoints || waypoints.length === 0">
         <app-route-calculator
           [showRouteOptions]="true"
           [showClearButton]="true"
@@ -27,8 +15,18 @@
         </app-route-calculator>
       </div>
 
+      <!-- Route Manager -->
+      <app-waypoint-manager
+        [waypoints]="waypoints"
+        [multiWaypointRoute]="currentMultiWaypointRoute"
+        (waypointsChanged)="onWaypointsChanged($event)"
+        (waypointsCleared)="onWaypointRouteCleared()"
+        (routeCalculated)="onWaypointRouteCalculated()"
+      >
+      </app-waypoint-manager>
+
       <!-- Route Options for Waypoint Mode -->
-      <div class="mt-3" *ngIf="enableWaypointMode && waypoints.length >= 2">
+      <div class="mt-3" *ngIf="waypoints && waypoints.length >= 2">
         <app-route-calculator
           [showRouteOptions]="true"
           [showClearButton]="true"

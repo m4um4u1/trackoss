@@ -1,10 +1,10 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouteCalculatorComponent } from '../components/route-calculator/route-calculator.component';
 import { RouteDisplayComponent } from '../components/route-display/route-display.component';
 import { WaypointManagerComponent } from '../components/waypoint-manager/waypoint-manager.component';
 import { Coordinates } from '../models/coordinates';
-import { RouteResult, RoutePoint, MultiWaypointRoute } from '../models/route';
+import { MultiWaypointRoute, RoutePoint, RouteResult } from '../models/route';
 import { RouteService } from '../services/route.service';
 import { Subscription } from 'rxjs';
 
@@ -17,12 +17,10 @@ import { Subscription } from 'rxjs';
 })
 export class MapSidepanelComponent implements OnInit, OnDestroy {
   @Input() waypoints: RoutePoint[] = [];
-  @Input() enableWaypointMode: boolean = false;
 
   @Output() routePointsReady = new EventEmitter<{ start?: Coordinates; end?: Coordinates }>();
   @Output() routeCalculated = new EventEmitter<RouteResult>();
   @Output() waypointsChanged = new EventEmitter<RoutePoint[]>();
-  @Output() waypointModeToggled = new EventEmitter<boolean>();
   @Output() multiWaypointRouteCalculated = new EventEmitter<MultiWaypointRoute>();
 
   currentMultiWaypointRoute: MultiWaypointRoute | null = null;
@@ -61,14 +59,6 @@ export class MapSidepanelComponent implements OnInit, OnDestroy {
 
   onWaypointsChanged(waypoints: RoutePoint[]): void {
     this.waypointsChanged.emit(waypoints);
-  }
-
-  onWaypointModeToggled(enabled: boolean): void {
-    this.waypointModeToggled.emit(enabled);
-
-    if (!enabled) {
-      this.waypointsChanged.emit([]);
-    }
   }
 
   onWaypointRouteCalculated(): void {

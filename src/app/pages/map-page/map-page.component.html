@@ -40,9 +40,7 @@
           (multiWaypointRouteCalculated)="onMultiWaypointRouteCalculated($event)"
           (routeCalculated)="onRouteCalculated($event)"
           (routePointsReady)="onRoutePointsUpdated($event)"
-          (waypointModeToggled)="onWaypointModeToggled($event)"
           (waypointsChanged)="onWaypointsChanged($event)"
-          [enableWaypointMode]="enableWaypointMode"
           [waypoints]="currentWaypoints"
         />
       </div>
@@ -57,7 +55,8 @@
       >
         <app-libre-map
           (waypointsChanged)="onWaypointsChanged($event)"
-          [enableWaypointMode]="enableWaypointMode"
+          (startPointChanged)="onStartPointChanged($event)"
+          (endPointChanged)="onEndPointChanged($event)"
           [endPoint]="currentEndPoint"
           [startPoint]="currentStartPoint"
           [waypoints]="currentWaypoints"

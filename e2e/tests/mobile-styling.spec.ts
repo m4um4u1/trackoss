@@ -18,7 +18,7 @@ test.describe('Mobile Chrome - CSS Properties and Hardware Acceleration', () => 
       const computedStyle = window.getComputedStyle(sidepanel);
       return {
         touchAction: computedStyle.touchAction,
-        webkitOverflowScrolling: computedStyle.webkitOverflowScrolling,
+        webkitOverflowScrolling: (computedStyle as any).webkitOverflowScrolling,
         overscrollBehavior: computedStyle.overscrollBehavior,
         transform: computedStyle.transform,
         willChange: computedStyle.willChange,
@@ -51,7 +51,7 @@ test.describe('Mobile Chrome - CSS Properties and Hardware Acceleration', () => 
       const computedStyle = window.getComputedStyle(contentContainer);
       return {
         touchAction: computedStyle.touchAction,
-        webkitOverflowScrolling: computedStyle.webkitOverflowScrolling,
+        webkitOverflowScrolling: (computedStyle as any).webkitOverflowScrolling,
         transform: computedStyle.transform,
       };
     });
@@ -82,9 +82,9 @@ test.describe('Mobile Safari - iOS CSS Properties', () => {
 
       const computedStyle = window.getComputedStyle(sidepanel);
       return {
-        webkitOverflowScrolling: computedStyle.webkitOverflowScrolling,
-        webkitTransform: computedStyle.webkitTransform,
-        webkitBackfaceVisibility: computedStyle.webkitBackfaceVisibility,
+        webkitOverflowScrolling: (computedStyle as any).webkitOverflowScrolling,
+        webkitTransform: (computedStyle as any).webkitTransform,
+        webkitBackfaceVisibility: (computedStyle as any).webkitBackfaceVisibility,
       };
     });
 
