@@ -3,15 +3,19 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 import { RouteService } from './route.service';
 import { ConfigService } from './config.service';
+import { BackendApiService } from './backend-api.service';
 import { Coordinates } from '../models/coordinates';
 import { RouteOptions, RoutePoint } from '../models/route';
 import { environment } from '../../environments/environments';
 import { of } from 'rxjs';
+import { PointType, RouteResponse, RouteType } from '../models/backend-api';
+import { DifficultyLevel, RoadType, RouteMetadata, SurfaceType } from '../models/route-metadata';
 
 describe('RouteService', () => {
   let service: RouteService;
   let httpMock: HttpTestingController;
   let configService: jest.Mocked<ConfigService>;
+  let backendApiService: jest.Mocked<BackendApiService>;
 
   const mockCoordinates: Coordinates = { lat: 52.520008, lon: 13.404954 };
   const mockEndCoordinates: Coordinates = { lat: 52.516275, lon: 13.377704 };
@@ -71,17 +75,26 @@ describe('RouteService', () => {
       ),
     };
 
+    const backendApiServiceSpy = {
+      createRoute: jest.fn(),
+      getRoute: jest.fn(),
+      updateRoute: jest.fn(),
+      deleteRoute: jest.fn(),
+    };
+
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         RouteService,
         { provide: ConfigService, useValue: configServiceSpy },
+        { provide: BackendApiService, useValue: backendApiServiceSpy },
       ],
     });
     service = TestBed.inject(RouteService);
     httpMock = TestBed.inject(HttpTestingController);
     configService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
+    backendApiService = TestBed.inject(BackendApiService) as jest.Mocked<BackendApiService>;
   });
 
   afterEach(() => {
@@ -1359,6 +1372,121 @@ describe('RouteService', () => {
 
       const req = httpMock.expectOne((request) => request.url.startsWith(`${environment.valhallaUrl}/route`));
       req.flush(completeMultiResponse);
+    });
+  });
+
+  // Route Saving Tests
+  describe('Route Saving', () => {
+    const mockRouteResult = {
+      startPoint: mockCoordinates,
+      endPoint: mockEndCoordinates,
+      routeData: {
+        type: 'FeatureCollection' as const,
+        features: [
+          {
+            type: 'Feature' as const,
+            properties: {
+              distance: 5000,
+              duration: 1200,
+              color: '#007cbf',
+              width: 4,
+            },
+            geometry: {
+              type: 'LineString' as const,
+              coordinates: [
+                [13.404954, 52.520008],
+                [13.377704, 52.516275],
+              ] as [number, number][],
+            },
+          },
+        ],
+      },
+      distance: 5000,
+      duration: 1200,
+      rawResponse: mockValhallaResponse,
+    };
+
+    const mockRouteResponse: RouteResponse = {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      name: 'Test Route',
+      description: 'A test cycling route',
+      createdAt: '2024-01-01T10:00:00Z',
+      updatedAt: '2024-01-01T10:00:00Z',
+      userId: 'user123',
+      totalDistance: 5000,
+      totalElevationGain: 100,
+      estimatedDuration: 1200,
+      routeType: RouteType.CYCLING,
+      isPublic: true,
+      metadata: '{"surface":"asphalt","difficulty":3}',
+      points: [],
+      pointCount: 2,
+    };
+
+    it('should save a route successfully', () => {
+      const routeName = 'Test Route';
+      const routeDescription = 'A test cycling route';
+      const metadata: RouteMetadata = {
+        surface: SurfaceType.ASPHALT,
+        roadTypes: [RoadType.BIKE_LANE, RoadType.LOCAL_STREET],
+        difficulty: 3 as DifficultyLevel,
+      };
+
+      backendApiService.createRoute.mockReturnValue(of(mockRouteResponse));
+
+      service
+        .saveRoute(mockRouteResult, routeName, routeDescription, RouteType.CYCLING, true, metadata)
+        .subscribe((response) => {
+          expect(response).toEqual(mockRouteResponse);
+        });
+
+      expect(backendApiService.createRoute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: routeName,
+          description: routeDescription,
+          routeType: RouteType.CYCLING,
+          isPublic: true,
+          points: expect.arrayContaining([
+            expect.objectContaining({
+              pointType: PointType.START_POINT,
+              name: 'Start',
+            }),
+            expect.objectContaining({
+              pointType: PointType.END_POINT,
+              name: 'End',
+            }),
+          ]),
+          totalDistance: 5000,
+          estimatedDuration: 1200,
+          metadata: expect.stringContaining('asphalt'),
+        }),
+      );
+    });
+
+    it('should save a route with multiple road types', () => {
+      const routeName = 'Multi Road Type Route';
+      const metadata: RouteMetadata = {
+        surface: SurfaceType.MIXED,
+        roadTypes: [RoadType.BIKE_PATH, RoadType.TRAIL, RoadType.GRAVEL_ROAD, RoadType.BRIDGE],
+        difficulty: 4 as DifficultyLevel,
+      };
+
+      backendApiService.createRoute.mockReturnValue(of(mockRouteResponse));
+
+      service
+        .saveRoute(mockRouteResult, routeName, undefined, RouteType.MOUNTAIN_BIKING, false, metadata)
+        .subscribe((response) => {
+          expect(response).toEqual(mockRouteResponse);
+        });
+
+      expect(backendApiService.createRoute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: routeName,
+          routeType: RouteType.MOUNTAIN_BIKING,
+          isPublic: false,
+          metadata: expect.stringContaining('bike_path'),
+        }),
+      );
     });
   });
 });

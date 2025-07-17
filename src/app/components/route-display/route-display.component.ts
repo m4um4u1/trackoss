@@ -1,15 +1,16 @@
-import { Component, Input, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subject, combineLatest } from 'rxjs';
+import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { RouteService } from '../../services/route.service';
-import { RouteResult, MultiWaypointRoute } from '../../models/route';
+import { MultiWaypointRoute, RouteResult } from '../../models/route';
 import { Coordinates } from '../../models/coordinates';
+import { SaveRouteModalComponent } from '../save-route-modal/save-route-modal.component';
 
 @Component({
   selector: 'app-route-display',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SaveRouteModalComponent],
   templateUrl: './route-display.component.html',
   styleUrls: ['./route-display.component.scss'],
 })
@@ -21,6 +22,9 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
   routeResult: RouteResult | null = null;
   multiWaypointRoute: MultiWaypointRoute | null = null;
   private destroy$ = new Subject<void>();
+
+  // Save route modal state
+  showSaveModal: boolean = false;
 
   constructor(private routeService: RouteService) {}
 
@@ -171,5 +175,20 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
   // Helper method to get the appropriate duration
   getDuration(): number | undefined {
     return this.multiWaypointRoute?.totalDuration || this.routeResult?.duration;
+  }
+
+  // Save route modal methods
+  openSaveModal(): void {
+    this.showSaveModal = true;
+  }
+
+  closeSaveModal(): void {
+    this.showSaveModal = false;
+  }
+
+  onRouteSaved(): void {
+    // Handle successful route save
+    console.log('Route saved successfully');
+    // You could emit an event here if needed
   }
 }

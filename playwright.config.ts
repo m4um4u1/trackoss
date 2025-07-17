@@ -63,8 +63,9 @@ export default defineConfig({
     timeout: 120 * 1000,
   },
 
-  /* Global setup */
+  /* Global setup and teardown */
   globalSetup: require.resolve('./e2e/global-setup.ts'),
+  globalTeardown: require.resolve('./e2e/global-teardown.ts'),
 
   /* Test timeout - increased for map operations */
   timeout: 60 * 1000,
