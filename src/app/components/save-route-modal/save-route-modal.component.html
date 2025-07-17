@@ -1,0 +1,282 @@
+<!-- Save Route Modal -->
+<div
+  class="modal fade"
+  [class.show]="isVisible"
+  [style.display]="isVisible ? 'block' : 'none'"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="saveRouteModalLabel"
+  aria-hidden="!isVisible"
+>
+  <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title" id="saveRouteModalLabel">Save Route</h5>
+        <button type="button" class="btn-close" aria-label="Close" (click)="closeModal()"></button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <form (ngSubmit)="saveRoute()" #routeForm="ngForm">
+          <!-- Basic Information -->
+          <div class="mb-4">
+            <h6 class="fw-bold text-primary mb-3">Basic Information</h6>
+
+            <!-- Route Name -->
+            <div class="mb-3">
+              <label for="routeName" class="form-label fw-bold">Route Name <span class="text-danger">*</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="routeName"
+                [(ngModel)]="routeName"
+                name="routeName"
+                placeholder="Enter route name"
+                required
+                maxlength="100"
+              />
+            </div>
+
+            <!-- Route Description -->
+            <div class="mb-3">
+              <label for="routeDescription" class="form-label fw-bold">Description</label>
+              <textarea
+                class="form-control"
+                id="routeDescription"
+                [(ngModel)]="routeDescription"
+                name="routeDescription"
+                rows="3"
+                placeholder="Describe your route..."
+                maxlength="500"
+              ></textarea>
+            </div>
+
+            <!-- Route Type -->
+            <div class="mb-3">
+              <label for="routeType" class="form-label fw-bold">Route Type</label>
+              <select
+                class="form-select"
+                id="routeType"
+                [(ngModel)]="routeType"
+                name="routeType"
+                (change)="onRouteTypeChange()"
+              >
+                <option *ngFor="let option of routeTypeOptions" [ngValue]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Public/Private Toggle -->
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="isPublic" [(ngModel)]="isPublic" name="isPublic" />
+              <label class="form-check-label fw-bold" for="isPublic"> Make route public </label>
+              <div class="form-text">Public routes can be discovered and used by other users</div>
+            </div>
+          </div>
+
+          <!-- Route Characteristics -->
+          <div class="mb-4">
+            <h6 class="fw-bold text-primary mb-3">Route Characteristics</h6>
+
+            <!-- Difficulty Rating -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Difficulty Level</label>
+              <div class="d-flex align-items-center gap-2">
+                <span
+                  *ngFor="let star of getStarArray(5); let i = index"
+                  class="star-rating"
+                  [class.active]="i < difficulty"
+                  (click)="setRating('difficulty', i + 1)"
+                >
+                  ★
+                </span>
+                <span class="ms-2 text-muted">({{ difficulty }}/5)</span>
+              </div>
+            </div>
+
+            <!-- Scenic Rating -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Scenic Rating</label>
+              <div class="d-flex align-items-center gap-2">
+                <span
+                  *ngFor="let star of getStarArray(5); let i = index"
+                  class="star-rating"
+                  [class.active]="i < scenicRating"
+                  (click)="setRating('scenic', i + 1)"
+                >
+                  ★
+                </span>
+                <span class="ms-2 text-muted">({{ scenicRating }}/5)</span>
+              </div>
+            </div>
+
+            <!-- Safety Rating -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Safety Rating</label>
+              <div class="d-flex align-items-center gap-2">
+                <span
+                  *ngFor="let star of getStarArray(5); let i = index"
+                  class="star-rating"
+                  [class.active]="i < safetyRating"
+                  (click)="setRating('safety', i + 1)"
+                >
+                  ★
+                </span>
+                <span class="ms-2 text-muted">({{ safetyRating }}/5)</span>
+              </div>
+            </div>
+
+            <!-- Surface Type -->
+            <div class="mb-3">
+              <label for="surfaceType" class="form-label fw-bold">Surface Type</label>
+              <select class="form-select" id="surfaceType" [(ngModel)]="surfaceType" name="surfaceType">
+                <option *ngFor="let option of surfaceTypeOptions" [ngValue]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Terrain -->
+            <div class="mb-3">
+              <label for="terrain" class="form-label fw-bold">Terrain</label>
+              <select class="form-select" id="terrain" [(ngModel)]="terrain" name="terrain">
+                <option *ngFor="let option of terrainOptions" [ngValue]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Traffic Level -->
+            <div class="mb-3">
+              <label for="trafficLevel" class="form-label fw-bold">Traffic Level</label>
+              <select class="form-select" id="trafficLevel" [(ngModel)]="trafficLevel" name="trafficLevel">
+                <option *ngFor="let option of trafficLevelOptions" [ngValue]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Technical Difficulty -->
+            <div class="mb-3">
+              <label for="technicalDifficulty" class="form-label fw-bold">Technical Difficulty</label>
+              <select
+                class="form-select"
+                id="technicalDifficulty"
+                [(ngModel)]="technicalDifficulty"
+                name="technicalDifficulty"
+              >
+                <option *ngFor="let option of technicalDifficultyOptions" [ngValue]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Recommendations -->
+          <div class="mb-4">
+            <h6 class="fw-bold text-primary mb-3">Recommendations</h6>
+
+            <!-- Best Time of Day -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Best Time of Day</label>
+              <div class="row">
+                <div class="col-6 col-md-4" *ngFor="let option of timeOfDayOptions">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      [id]="'timeOfDay_' + option.value"
+                      [checked]="isTimeOfDaySelected(option.value)"
+                      (change)="onTimeOfDayChange(option.value, $event)"
+                    />
+                    <label class="form-check-label" [for]="'timeOfDay_' + option.value">
+                      {{ option.label }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Best Season -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Best Season</label>
+              <div class="row">
+                <div class="col-6 col-md-3" *ngFor="let option of seasonOptions">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      [id]="'season_' + option.value"
+                      [checked]="isSeasonSelected(option.value)"
+                      (change)="onSeasonChange(option.value, $event)"
+                    />
+                    <label class="form-check-label" [for]="'season_' + option.value">
+                      {{ option.label }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Information -->
+          <div class="mb-4">
+            <h6 class="fw-bold text-primary mb-3">Additional Information</h6>
+
+            <!-- Notes -->
+            <div class="mb-3">
+              <label for="notes" class="form-label fw-bold">Notes</label>
+              <textarea
+                class="form-control"
+                id="notes"
+                [(ngModel)]="notes"
+                name="notes"
+                rows="3"
+                placeholder="Any additional notes about this route..."
+                maxlength="1000"
+              ></textarea>
+            </div>
+
+            <!-- Tags -->
+            <div class="mb-3">
+              <label for="tags" class="form-label fw-bold">Tags</label>
+              <input
+                type="text"
+                class="form-control"
+                id="tags"
+                [(ngModel)]="tags"
+                name="tags"
+                placeholder="Enter tags separated by commas (e.g., scenic, challenging, family-friendly)"
+                maxlength="200"
+              />
+              <div class="form-text">Separate tags with commas</div>
+            </div>
+          </div>
+
+          <!-- Error/Success Messages -->
+          <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+            {{ errorMessage }}
+          </div>
+
+          <div *ngIf="successMessage" class="alert alert-success" role="alert">
+            {{ successMessage }}
+          </div>
+        </form>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="saveRoute()" [disabled]="isSaving || !routeName.trim()">
+          <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          {{ isSaving ? 'Saving...' : 'Save Route' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Backdrop -->
+<div class="modal-backdrop fade" [class.show]="isVisible" *ngIf="isVisible" (click)="closeModal()"></div>

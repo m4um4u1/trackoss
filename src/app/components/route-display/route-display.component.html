@@ -41,6 +41,7 @@
   </div>
 
   <div *ngIf="showActions" class="d-flex gap-2 mt-3 flex-column flex-xl-row">
+    <button class="btn btn-success" (click)="openSaveModal()">Save Route</button>
     <button class="btn btn-primary" (click)="multiWaypointRoute ? exportMultiWaypointRoute() : exportRoute()">
       Export Route
     </button>
@@ -53,3 +54,13 @@
 <div class="no-route" *ngIf="!hasRoute() && showNoRouteMessage">
   <p>No route calculated yet.</p>
 </div>
+
+<!-- Save Route Modal -->
+<app-save-route-modal
+  [routeResult]="routeResult"
+  [multiWaypointRoute]="multiWaypointRoute"
+  [isVisible]="showSaveModal"
+  (modalClosed)="closeSaveModal()"
+  (routeSaved)="onRouteSaved()"
+>
+</app-save-route-modal>

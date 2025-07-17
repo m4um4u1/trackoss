@@ -7,6 +7,9 @@ import { Coordinates } from '../models/coordinates';
 import { MultiWaypointRoute, RouteData, RouteLeg, RouteOptions, RoutePoint, RouteResult } from '../models/route';
 import { environment } from '../../environments/environments';
 import { ConfigService } from './config.service';
+import { BackendApiService } from './backend-api.service';
+import { PointType, RouteCreateRequest, RoutePointRequest, RouteResponse, RouteType } from '../models/backend-api';
+import { RouteMetadata, serializeRouteMetadata } from '../models/route-metadata';
 
 @Injectable({
   providedIn: 'root',
@@ -18,6 +21,7 @@ export class RouteService {
   constructor(
     private http: HttpClient,
     private configService: ConfigService,
+    private backendApiService: BackendApiService,
   ) {}
 
   /**
@@ -412,5 +416,164 @@ export class RouteService {
     }
 
     return coordinates;
+  }
+
+  /**
+   * Save a route result to the backend
+   */
+  saveRoute(
+    routeResult: RouteResult,
+    name: string,
+    description?: string,
+    routeType: RouteType = RouteType.CYCLING,
+    isPublic: boolean = false,
+    metadata?: RouteMetadata,
+  ): Observable<RouteResponse> {
+    const routeRequest = this.convertRouteResultToCreateRequest(
+      routeResult,
+      name,
+      description,
+      routeType,
+      isPublic,
+      metadata,
+    );
+    return this.backendApiService.createRoute(routeRequest);
+  }
+
+  /**
+   * Save a multi-waypoint route to the backend
+   */
+  saveMultiWaypointRoute(
+    multiWaypointRoute: MultiWaypointRoute,
+    name: string,
+    description?: string,
+    routeType: RouteType = RouteType.CYCLING,
+    isPublic: boolean = false,
+    metadata?: RouteMetadata,
+  ): Observable<RouteResponse> {
+    const routeRequest = this.convertMultiWaypointRouteToCreateRequest(
+      multiWaypointRoute,
+      name,
+      description,
+      routeType,
+      isPublic,
+      metadata,
+    );
+    return this.backendApiService.createRoute(routeRequest);
+  }
+
+  /**
+   * Convert RouteResult to RouteCreateRequest for backend API
+   */
+  private convertRouteResultToCreateRequest(
+    routeResult: RouteResult,
+    name: string,
+    description?: string,
+    routeType: RouteType = RouteType.CYCLING,
+    isPublic: boolean = false,
+    metadata?: RouteMetadata,
+  ): RouteCreateRequest {
+    const coordinates = routeResult.routeData.features[0]?.geometry.coordinates || [];
+    const points: RoutePointRequest[] = [];
+
+    // Add start point
+    if (coordinates.length > 0) {
+      const startCoord = coordinates[0];
+      points.push({
+        latitude: startCoord[1],
+        longitude: startCoord[0],
+        pointType: PointType.START_POINT,
+        name: 'Start',
+      });
+    }
+
+    // Add track points (sample every 10th point to avoid too many points)
+    const sampleRate = Math.max(1, Math.floor(coordinates.length / 100)); // Max 100 track points
+    for (let i = 1; i < coordinates.length - 1; i += sampleRate) {
+      const coord = coordinates[i];
+      points.push({
+        latitude: coord[1],
+        longitude: coord[0],
+        pointType: PointType.TRACK_POINT,
+      });
+    }
+
+    // Add end point
+    if (coordinates.length > 1) {
+      const endCoord = coordinates[coordinates.length - 1];
+      points.push({
+        latitude: endCoord[1],
+        longitude: endCoord[0],
+        pointType: PointType.END_POINT,
+        name: 'End',
+      });
+    }
+
+    return {
+      name,
+      description,
+      routeType,
+      isPublic,
+      points,
+      totalDistance: routeResult.distance,
+      estimatedDuration: routeResult.duration,
+      metadata: metadata ? serializeRouteMetadata(metadata) : undefined,
+    };
+  }
+
+  /**
+   * Convert MultiWaypointRoute to RouteCreateRequest for backend API
+   */
+  private convertMultiWaypointRouteToCreateRequest(
+    multiWaypointRoute: MultiWaypointRoute,
+    name: string,
+    description?: string,
+    routeType: RouteType = RouteType.CYCLING,
+    isPublic: boolean = false,
+    metadata?: RouteMetadata,
+  ): RouteCreateRequest {
+    const coordinates = multiWaypointRoute.routeData.features[0]?.geometry.coordinates || [];
+    const points: RoutePointRequest[] = [];
+
+    // Add waypoints first
+    multiWaypointRoute.waypoints.forEach((waypoint, index) => {
+      let pointType: PointType;
+      if (index === 0) {
+        pointType = PointType.START_POINT;
+      } else if (index === multiWaypointRoute.waypoints.length - 1) {
+        pointType = PointType.END_POINT;
+      } else {
+        pointType = PointType.WAYPOINT;
+      }
+
+      points.push({
+        latitude: waypoint.coordinates.lat,
+        longitude: waypoint.coordinates.lon,
+        pointType,
+        name: waypoint.name || `${pointType.toLowerCase().replace('_', ' ')}`,
+      });
+    });
+
+    // Add track points (sample to avoid too many points)
+    const sampleRate = Math.max(1, Math.floor(coordinates.length / 100)); // Max 100 track points
+    for (let i = 1; i < coordinates.length - 1; i += sampleRate) {
+      const coord = coordinates[i];
+      points.push({
+        latitude: coord[1],
+        longitude: coord[0],
+        pointType: PointType.TRACK_POINT,
+      });
+    }
+
+    return {
+      name,
+      description,
+      routeType,
+      isPublic,
+      points,
+      totalDistance: multiWaypointRoute.totalDistance,
+      estimatedDuration: multiWaypointRoute.totalDuration,
+      metadata: metadata ? serializeRouteMetadata(metadata) : undefined,
+    };
   }
 }
