@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, switchMap } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -16,10 +16,9 @@ import {
   providedIn: 'root',
 })
 export class BackendApiService {
-  constructor(
-    private http: HttpClient,
-    private configService: ConfigService,
-  ) {}
+  // Modern Angular 20 dependency injection
+  private readonly http = inject(HttpClient);
+  private readonly configService = inject(ConfigService);
 
   /**
    * Create a new route in the backend

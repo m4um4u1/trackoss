@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, switchMap } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -15,19 +15,43 @@ import { RouteMetadata, serializeRouteMetadata } from '../models/route-metadata'
   providedIn: 'root',
 })
 export class RouteService {
+  // Modern Angular 20 dependency injection
+  private readonly http = inject(HttpClient);
+  private readonly configService = inject(ConfigService);
+  private readonly backendApiService = inject(BackendApiService);
+
+  // Signal-based state management
+  private readonly _currentRoute = signal<RouteResult | null>(null);
+  private readonly _currentMultiWaypointRoute = signal<MultiWaypointRoute | null>(null);
+  private readonly _isCalculating = signal(false);
+  private readonly _lastError = signal<string | null>(null);
+
+  // Public readonly signals
+  readonly currentRoute = this._currentRoute.asReadonly();
+  readonly currentMultiWaypointRoute = this._currentMultiWaypointRoute.asReadonly();
+  readonly isCalculating = this._isCalculating.asReadonly();
+  readonly lastError = this._lastError.asReadonly();
+
+  // Computed signals for derived state
+  readonly hasRoute = computed(() => this._currentRoute() !== null);
+  readonly hasMultiWaypointRoute = computed(() => this._currentMultiWaypointRoute() !== null);
+  readonly routeDistance = computed(() => this._currentRoute()?.distance ?? 0);
+  readonly routeDuration = computed(() => this._currentRoute()?.duration ?? 0);
+  readonly multiRouteDistance = computed(() => this._currentMultiWaypointRoute()?.totalDistance ?? 0);
+  readonly multiRouteDuration = computed(() => this._currentMultiWaypointRoute()?.totalDuration ?? 0);
+
+  // Legacy BehaviorSubject support for backward compatibility
   private currentRoute$ = new BehaviorSubject<RouteResult | null>(null);
   private currentMultiWaypointRoute$ = new BehaviorSubject<MultiWaypointRoute | null>(null);
-
-  constructor(
-    private http: HttpClient,
-    private configService: ConfigService,
-    private backendApiService: BackendApiService,
-  ) {}
 
   /**
    * Calculate a route between two points
    */
   calculateRoute(start: Coordinates, end: Coordinates, options: RouteOptions = {}): Observable<RouteResult> {
+    // Set loading state
+    this._isCalculating.set(true);
+    this._lastError.set(null);
+
     const costing = options.costing || 'bicycle';
     const bicycleType = options.bicycleType || 'hybrid';
 
@@ -47,28 +71,68 @@ export class RouteService {
       }),
       map((response: any) => {
         const routeResult = this.processRouteResponse(start, end, response, options);
+
+        // Update signals
+        this._currentRoute.set(routeResult);
+        this._isCalculating.set(false);
+
+        // Update legacy BehaviorSubject for backward compatibility
         this.currentRoute$.next(routeResult);
+
         return routeResult;
       }),
       catchError((error) => {
         console.error('Error calculating route:', error);
+
+        // Update error state
+        this._isCalculating.set(false);
+        this._lastError.set(error.message || 'Failed to calculate route');
+
         throw error;
       }),
     );
   }
 
   /**
-   * Get the current active route as an observable
+   * Get the current active route as an observable (legacy support)
+   * @deprecated Use the currentRoute signal instead
    */
   getCurrentRoute(): Observable<RouteResult | null> {
     return this.currentRoute$.asObservable();
   }
 
   /**
-   * Get the current active multi-waypoint route as an observable
+   * Get the current active multi-waypoint route as an observable (legacy support)
+   * @deprecated Use the currentMultiWaypointRoute signal instead
    */
   getCurrentMultiWaypointRoute(): Observable<MultiWaypointRoute | null> {
     return this.currentMultiWaypointRoute$.asObservable();
+  }
+
+  /**
+   * Clear the current route and reset state
+   */
+  clearRoute(): void {
+    this._currentRoute.set(null);
+    this._lastError.set(null);
+    this.currentRoute$.next(null);
+  }
+
+  /**
+   * Clear the current multi-waypoint route and reset state
+   */
+  clearMultiWaypointRoute(): void {
+    this._currentMultiWaypointRoute.set(null);
+    this._lastError.set(null);
+    this.currentMultiWaypointRoute$.next(null);
+  }
+
+  /**
+   * Clear all routes and reset state
+   */
+  clearAllRoutes(): void {
+    this.clearRoute();
+    this.clearMultiWaypointRoute();
   }
 
   /**
@@ -78,6 +142,10 @@ export class RouteService {
     if (waypoints.length < 2) {
       throw new Error('At least 2 waypoints are required for route calculation');
     }
+
+    // Set loading state
+    this._isCalculating.set(true);
+    this._lastError.set(null);
 
     const costing = options.costing || 'bicycle';
     const bicycleType = options.bicycleType || 'hybrid';
@@ -99,11 +167,23 @@ export class RouteService {
       }),
       map((response: any) => {
         const multiWaypointRoute = this.processMultiWaypointRouteResponse(waypoints, response, options);
+
+        // Update signals
+        this._currentMultiWaypointRoute.set(multiWaypointRoute);
+        this._isCalculating.set(false);
+
+        // Update legacy BehaviorSubject for backward compatibility
         this.currentMultiWaypointRoute$.next(multiWaypointRoute);
+
         return multiWaypointRoute;
       }),
       catchError((error) => {
         console.error('Error calculating multi-waypoint route:', error);
+
+        // Update error state
+        this._isCalculating.set(false);
+        this._lastError.set(error.message || 'Failed to calculate multi-waypoint route');
+
         throw error;
       }),
     );

@@ -1,5 +1,15 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  EventEmitter,
+  inject,
+  Input,
+  OnInit,
+  Output,
+  signal,
+} from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { RouteService } from '../../services/route.service';
 import { MultiWaypointRoute, RouteResult } from '../../models/route';
@@ -18,9 +28,10 @@ import {
 @Component({
   selector: 'app-save-route-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './save-route-modal.component.html',
   styleUrls: ['./save-route-modal.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SaveRouteModalComponent implements OnInit {
   @Input() routeResult: RouteResult | null = null;
@@ -29,29 +40,67 @@ export class SaveRouteModalComponent implements OnInit {
   @Output() modalClosed = new EventEmitter<void>();
   @Output() routeSaved = new EventEmitter<void>();
 
-  // Form data
-  routeName: string = '';
-  routeDescription: string = '';
-  routeType: RouteType = RouteType.CYCLING;
-  isPublic: boolean = false;
+  // Modern Angular 20 dependency injection
+  private readonly routeService = inject(RouteService);
 
-  // Metadata
-  difficulty: DifficultyLevel = 3;
-  scenicRating: 1 | 2 | 3 | 4 | 5 = 3;
-  safetyRating: 1 | 2 | 3 | 4 | 5 = 3;
-  surfaceType: SurfaceType = SurfaceType.MIXED;
-  trafficLevel: TrafficLevel = TrafficLevel.MEDIUM;
-  technicalDifficulty: TechnicalDifficulty = TechnicalDifficulty.INTERMEDIATE;
-  terrain: TerrainType = TerrainType.MIXED;
-  bestTimeOfDay: TimeOfDay[] = [];
-  bestSeason: Season[] = [];
-  notes: string = '';
-  tags: string = '';
+  // Signal-based form data
+  private readonly _routeName = signal('');
+  private readonly _routeDescription = signal('');
+  private readonly _routeType = signal<RouteType>(RouteType.CYCLING);
+  private readonly _isPublic = signal(false);
 
-  // UI state
-  isSaving: boolean = false;
-  errorMessage: string = '';
-  successMessage: string = '';
+  // Signal-based metadata
+  private readonly _difficulty = signal<DifficultyLevel>(3);
+  private readonly _scenicRating = signal<1 | 2 | 3 | 4 | 5>(3);
+  private readonly _safetyRating = signal<1 | 2 | 3 | 4 | 5>(3);
+  private readonly _surfaceType = signal<SurfaceType>(SurfaceType.MIXED);
+  private readonly _trafficLevel = signal<TrafficLevel>(TrafficLevel.MEDIUM);
+  private readonly _technicalDifficulty = signal<TechnicalDifficulty>(TechnicalDifficulty.INTERMEDIATE);
+  private readonly _terrain = signal<TerrainType>(TerrainType.MIXED);
+  private readonly _bestTimeOfDay = signal<TimeOfDay[]>([]);
+  private readonly _bestSeason = signal<Season[]>([]);
+  private readonly _notes = signal('');
+  private readonly _tags = signal('');
+
+  // Signal-based UI state
+  private readonly _isSaving = signal(false);
+  private readonly _errorMessage = signal('');
+  private readonly _successMessage = signal('');
+
+  // Public readonly signals for template access
+  readonly routeName = this._routeName.asReadonly();
+  readonly routeDescription = this._routeDescription.asReadonly();
+  readonly routeType = this._routeType.asReadonly();
+  readonly isPublic = this._isPublic.asReadonly();
+  readonly difficulty = this._difficulty.asReadonly();
+  readonly scenicRating = this._scenicRating.asReadonly();
+  readonly safetyRating = this._safetyRating.asReadonly();
+  readonly surfaceType = this._surfaceType.asReadonly();
+  readonly trafficLevel = this._trafficLevel.asReadonly();
+  readonly technicalDifficulty = this._technicalDifficulty.asReadonly();
+  readonly terrain = this._terrain.asReadonly();
+  readonly bestTimeOfDay = this._bestTimeOfDay.asReadonly();
+  readonly bestSeason = this._bestSeason.asReadonly();
+  readonly notes = this._notes.asReadonly();
+  readonly tags = this._tags.asReadonly();
+  readonly isSaving = this._isSaving.asReadonly();
+  readonly errorMessage = this._errorMessage.asReadonly();
+  readonly successMessage = this._successMessage.asReadonly();
+
+  // Computed signals
+  readonly isFormValid = computed(() => this._routeName().trim().length > 0);
+  readonly processedTags = computed(() =>
+    this._tags().trim()
+      ? this._tags()
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter((tag) => tag)
+      : [],
+  );
+  readonly defaultRouteName = computed(() => {
+    const date = new Date().toLocaleDateString();
+    return `${this.getRouteTypeLabel(this._routeType())} Route - ${date}`;
+  });
 
   // Enum references for templates
   RouteType = RouteType;
@@ -121,17 +170,14 @@ export class SaveRouteModalComponent implements OnInit {
     { value: Season.WINTER, label: 'Winter' },
   ];
 
-  constructor(private routeService: RouteService) {}
-
   ngOnInit(): void {
     // Set default route name based on route type
     this.updateDefaultRouteName();
   }
 
   private updateDefaultRouteName(): void {
-    if (!this.routeName) {
-      const date = new Date().toLocaleDateString();
-      this.routeName = `${this.getRouteTypeLabel(this.routeType)} Route - ${date}`;
+    if (!this._routeName()) {
+      this._routeName.set(this.defaultRouteName());
     }
   }
 
@@ -140,100 +186,115 @@ export class SaveRouteModalComponent implements OnInit {
     return option ? option.label : 'Route';
   }
 
-  onRouteTypeChange(): void {
+  // Signal update methods
+  updateRouteName(value: string): void {
+    this._routeName.set(value);
+  }
+
+  updateRouteDescription(value: string): void {
+    this._routeDescription.set(value);
+  }
+
+  updateRouteType(value: RouteType): void {
+    this._routeType.set(value);
     this.updateDefaultRouteName();
+  }
+
+  updateIsPublic(value: boolean): void {
+    this._isPublic.set(value);
+  }
+
+  updateNotes(value: string): void {
+    this._notes.set(value);
+  }
+
+  updateTags(value: string): void {
+    this._tags.set(value);
   }
 
   onTimeOfDayChange(timeOfDay: TimeOfDay, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
+    const current = this._bestTimeOfDay();
     if (checked) {
-      if (!this.bestTimeOfDay.includes(timeOfDay)) {
-        this.bestTimeOfDay.push(timeOfDay);
+      if (!current.includes(timeOfDay)) {
+        this._bestTimeOfDay.set([...current, timeOfDay]);
       }
     } else {
-      this.bestTimeOfDay = this.bestTimeOfDay.filter((t) => t !== timeOfDay);
+      this._bestTimeOfDay.set(current.filter((t) => t !== timeOfDay));
     }
   }
 
   onSeasonChange(season: Season, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
+    const current = this._bestSeason();
     if (checked) {
-      if (!this.bestSeason.includes(season)) {
-        this.bestSeason.push(season);
+      if (!current.includes(season)) {
+        this._bestSeason.set([...current, season]);
       }
     } else {
-      this.bestSeason = this.bestSeason.filter((s) => s !== season);
+      this._bestSeason.set(current.filter((s) => s !== season));
     }
   }
 
   isTimeOfDaySelected(timeOfDay: TimeOfDay): boolean {
-    return this.bestTimeOfDay.includes(timeOfDay);
+    return this._bestTimeOfDay().includes(timeOfDay);
   }
 
   isSeasonSelected(season: Season): boolean {
-    return this.bestSeason.includes(season);
+    return this._bestSeason().includes(season);
   }
 
   async saveRoute(): Promise<void> {
-    if (!this.routeName.trim()) {
-      this.errorMessage = 'Route name is required';
+    if (!this.isFormValid()) {
+      this._errorMessage.set('Route name is required');
       return;
     }
 
     if (!this.routeResult && !this.multiWaypointRoute) {
-      this.errorMessage = 'No route to save';
+      this._errorMessage.set('No route to save');
       return;
     }
 
-    this.isSaving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
+    this._isSaving.set(true);
+    this._errorMessage.set('');
+    this._successMessage.set('');
 
     try {
       const metadata: RouteMetadata = {
-        surface: this.surfaceType,
-        terrain: this.terrain,
-        difficulty: this.difficulty,
-        scenicRating: this.scenicRating,
-        safetyRating: this.safetyRating,
-        trafficLevel: this.trafficLevel,
-        technicalDifficulty: this.technicalDifficulty,
-        bestTimeOfDay: this.bestTimeOfDay.length > 0 ? this.bestTimeOfDay : undefined,
-        bestSeason: this.bestSeason.length > 0 ? this.bestSeason : undefined,
-        notes: this.notes.trim() || undefined,
-        tags: this.tags.trim()
-          ? this.tags
-              .split(',')
-              .map((tag) => tag.trim())
-              .filter((tag) => tag)
-          : undefined,
+        surface: this._surfaceType(),
+        terrain: this._terrain(),
+        difficulty: this._difficulty(),
+        scenicRating: this._scenicRating(),
+        safetyRating: this._safetyRating(),
+        trafficLevel: this._trafficLevel(),
+        technicalDifficulty: this._technicalDifficulty(),
+        bestTimeOfDay: this._bestTimeOfDay().length > 0 ? this._bestTimeOfDay() : undefined,
+        bestSeason: this._bestSeason().length > 0 ? this._bestSeason() : undefined,
+        notes: this._notes().trim() || undefined,
+        tags: this.processedTags().length > 0 ? this.processedTags() : undefined,
       };
 
       if (this.multiWaypointRoute) {
-        await this.routeService
-          .saveMultiWaypointRoute(
-            this.multiWaypointRoute,
-            this.routeName.trim(),
-            this.routeDescription.trim() || undefined,
-            this.routeType,
-            this.isPublic,
-            metadata,
-          )
-          .toPromise();
+        this.routeService.saveMultiWaypointRoute(
+          this.multiWaypointRoute,
+          this._routeName().trim(),
+          this._routeDescription().trim() || undefined,
+          this._routeType(),
+          this._isPublic(),
+          metadata,
+        );
       } else if (this.routeResult) {
-        await this.routeService
-          .saveRoute(
-            this.routeResult,
-            this.routeName.trim(),
-            this.routeDescription.trim() || undefined,
-            this.routeType,
-            this.isPublic,
-            metadata,
-          )
-          .toPromise();
+        this.routeService.saveRoute(
+          this.routeResult,
+          this._routeName().trim(),
+          this._routeDescription().trim() || undefined,
+          this._routeType(),
+          this._isPublic(),
+          metadata,
+        );
       }
 
-      this.successMessage = 'Route saved successfully!';
+      this._successMessage.set('Route saved successfully!');
       this.routeSaved.emit();
 
       // Close modal after a short delay to show success message
@@ -242,9 +303,9 @@ export class SaveRouteModalComponent implements OnInit {
       }, 1500);
     } catch (error) {
       console.error('Error saving route:', error);
-      this.errorMessage = 'Failed to save route. Please try again.';
+      this._errorMessage.set('Failed to save route. Please try again.');
     } finally {
-      this.isSaving = false;
+      this._isSaving.set(false);
     }
   }
 
@@ -254,24 +315,24 @@ export class SaveRouteModalComponent implements OnInit {
   }
 
   private resetForm(): void {
-    this.routeName = '';
-    this.routeDescription = '';
-    this.routeType = RouteType.CYCLING;
-    this.isPublic = false;
-    this.difficulty = 3;
-    this.scenicRating = 3;
-    this.safetyRating = 3;
-    this.surfaceType = SurfaceType.MIXED;
-    this.trafficLevel = TrafficLevel.MEDIUM;
-    this.technicalDifficulty = TechnicalDifficulty.INTERMEDIATE;
-    this.terrain = TerrainType.MIXED;
-    this.bestTimeOfDay = [];
-    this.bestSeason = [];
-    this.notes = '';
-    this.tags = '';
-    this.errorMessage = '';
-    this.successMessage = '';
-    this.isSaving = false;
+    this._routeName.set('');
+    this._routeDescription.set('');
+    this._routeType.set(RouteType.CYCLING);
+    this._isPublic.set(false);
+    this._difficulty.set(3);
+    this._scenicRating.set(3);
+    this._safetyRating.set(3);
+    this._surfaceType.set(SurfaceType.MIXED);
+    this._trafficLevel.set(TrafficLevel.MEDIUM);
+    this._technicalDifficulty.set(TechnicalDifficulty.INTERMEDIATE);
+    this._terrain.set(TerrainType.MIXED);
+    this._bestTimeOfDay.set([]);
+    this._bestSeason.set([]);
+    this._notes.set('');
+    this._tags.set('');
+    this._errorMessage.set('');
+    this._successMessage.set('');
+    this._isSaving.set(false);
   }
 
   // Helper method to create star rating display
@@ -284,14 +345,31 @@ export class SaveRouteModalComponent implements OnInit {
   setRating(type: 'difficulty' | 'scenic' | 'safety', rating: number): void {
     switch (type) {
       case 'difficulty':
-        this.difficulty = rating as DifficultyLevel;
+        this._difficulty.set(rating as DifficultyLevel);
         break;
       case 'scenic':
-        this.scenicRating = rating as 1 | 2 | 3 | 4 | 5;
+        this._scenicRating.set(rating as 1 | 2 | 3 | 4 | 5);
         break;
       case 'safety':
-        this.safetyRating = rating as 1 | 2 | 3 | 4 | 5;
+        this._safetyRating.set(rating as 1 | 2 | 3 | 4 | 5);
         break;
     }
+  }
+
+  // Signal update methods for dropdowns
+  updateSurfaceType(value: SurfaceType): void {
+    this._surfaceType.set(value);
+  }
+
+  updateTrafficLevel(value: TrafficLevel): void {
+    this._trafficLevel.set(value);
+  }
+
+  updateTechnicalDifficulty(value: TechnicalDifficulty): void {
+    this._technicalDifficulty.set(value);
+  }
+
+  updateTerrain(value: TerrainType): void {
+    this._terrain.set(value);
   }
 }

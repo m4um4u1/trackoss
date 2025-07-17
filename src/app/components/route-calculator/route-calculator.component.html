@@ -1,43 +1,63 @@
 <div class="card border rounded-3 bg-white p-3">
   <h4 class="mb-3 text-dark">Route Calculator</h4>
 
-  <div *ngIf="showLocationInputs" class="mb-3">
-    <label class="form-label fw-bold text-secondary" for="startPoint">Start Point:</label>
-    <input
-      type="text"
-      id="startPoint"
-      class="form-control"
-      [(ngModel)]="startPointText"
-      placeholder="Enter start location"
-      [disabled]="isCalculating"
-    />
-  </div>
+  @if (showLocationInputs) {
+    <div class="mb-3">
+      <label class="form-label fw-bold text-secondary" for="startPoint">Start Point:</label>
+      <input
+        type="text"
+        id="startPoint"
+        class="form-control"
+        [ngModel]="startPointText()"
+        (ngModelChange)="updateStartPointText($event)"
+        placeholder="Enter start location"
+        [disabled]="isCalculating()"
+      />
+    </div>
+  }
 
-  <div *ngIf="showLocationInputs" class="mb-3">
-    <label class="form-label fw-bold text-secondary" for="endPoint">End Point:</label>
-    <input
-      type="text"
-      id="endPoint"
-      class="form-control"
-      [(ngModel)]="endPointText"
-      placeholder="Enter end location"
-      [disabled]="isCalculating"
-    />
-  </div>
+  @if (showLocationInputs) {
+    <div class="mb-3">
+      <label class="form-label fw-bold text-secondary" for="endPoint">End Point:</label>
+      <input
+        type="text"
+        id="endPoint"
+        class="form-control"
+        [ngModel]="endPointText()"
+        (ngModelChange)="updateEndPointText($event)"
+        placeholder="Enter end location"
+        [disabled]="isCalculating()"
+      />
+    </div>
+  }
 
-  <div *ngIf="showRouteOptions" class="mb-3">
-    <label class="form-label fw-bold text-secondary" for="costing">Transportation Mode:</label>
-    <select [(ngModel)]="routeOptions.costing" [disabled]="isCalculating" class="form-select" id="costing">
-      @for (option of costingOptions; track option[0]) {
-        <option [ngValue]="option[1]">{{ option[0] }}</option>
-      }
-    </select>
-  </div>
+  @if (showRouteOptions) {
+    <div class="mb-3">
+      <label class="form-label fw-bold text-secondary" for="costing">Transportation Mode:</label>
+      <select
+        [ngModel]="routeOptions().costing"
+        (ngModelChange)="updateRouteOptions({ costing: $event })"
+        [disabled]="isCalculating()"
+        class="form-select"
+        id="costing"
+      >
+        @for (option of costingOptions; track option[0]) {
+          <option [ngValue]="option[1]">{{ option[0] }}</option>
+        }
+      </select>
+    </div>
+  }
 
-  @if (routeOptions.costing === 'bicycle') {
+  @if (routeOptions().costing === 'bicycle') {
     <div class="mb-3">
       <label for="bicycleType" class="form-label fw-bold text-secondary">Bicycle Type:</label>
-      <select id="bicycleType" class="form-select" [(ngModel)]="routeOptions.bicycleType" [disabled]="isCalculating">
+      <select
+        id="bicycleType"
+        class="form-select"
+        [ngModel]="routeOptions().bicycleType"
+        (ngModelChange)="updateRouteOptions({ bicycleType: $event })"
+        [disabled]="isCalculating()"
+      >
         @for (option of bicycleTypesOptions; track option) {
           <option [ngValue]="option">{{ option }}</option>
         }
@@ -46,26 +66,31 @@
   }
 
   <div class="d-flex gap-2 mt-3 flex-column flex-xl-row">
-    <button
-      class="btn btn-primary"
-      (click)="calculateRoute()"
-      [disabled]="!canCalculateRoute() || isCalculating"
-      *ngIf="showCalculateButton"
-    >
-      <span *ngIf="isCalculating">Calculating...</span>
-      <span *ngIf="!isCalculating">Calculate Route</span>
-    </button>
+    @if (showCalculateButton) {
+      <button class="btn btn-primary" (click)="calculateRoute()" [disabled]="!canCalculateRoute() || isCalculating()">
+        @if (isCalculating()) {
+          <span>Calculating...</span>
+        }
+        @if (!isCalculating()) {
+          <span>Calculate Route</span>
+        }
+      </button>
+    }
 
-    <button class="btn btn-secondary" (click)="clearRoute()" [disabled]="isCalculating" *ngIf="showClearButton">
-      Clear Route
-    </button>
+    @if (showClearButton) {
+      <button class="btn btn-secondary" (click)="clearRoute()" [disabled]="isCalculating()">Clear Route</button>
+    }
   </div>
 
-  <div class="error-message" *ngIf="errorMessage">
-    <p class="text-danger">{{ errorMessage }}</p>
-  </div>
+  @if (errorMessage()) {
+    <div class="error-message">
+      <p class="text-danger">{{ errorMessage() }}</p>
+    </div>
+  }
 
-  <div class="success-message" *ngIf="successMessage">
-    <p class="text-success">{{ successMessage }}</p>
-  </div>
+  @if (successMessage()) {
+    <div class="success-message">
+      <p class="text-success">{{ successMessage() }}</p>
+    </div>
+  }
 </div>

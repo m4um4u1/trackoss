@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouteCalculatorComponent } from '../components/route-calculator/route-calculator.component';
 import { RouteDisplayComponent } from '../components/route-display/route-display.component';
 import { WaypointManagerComponent } from '../components/waypoint-manager/waypoint-manager.component';
@@ -10,7 +10,7 @@ import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-map-sidepanel',
-  imports: [CommonModule, RouteCalculatorComponent, RouteDisplayComponent, WaypointManagerComponent],
+  imports: [RouteCalculatorComponent, RouteDisplayComponent, WaypointManagerComponent],
   templateUrl: './map-sidepanel.component.html',
   standalone: true,
   styleUrls: ['./map-sidepanel.component.scss'],

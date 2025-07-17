@@ -80,7 +80,8 @@ describe('MapPageComponent', () => {
   });
 
   it('should clear waypoints when empty array is passed', () => {
-    component.currentWaypoints = mockWaypoints;
+    // First set some waypoints
+    component.onWaypointsChanged(mockWaypoints);
     component.onWaypointsChanged([]);
 
     expect(component.currentWaypoints).toEqual([]);
@@ -93,8 +94,11 @@ describe('MapPageComponent', () => {
   // Removed test for multiple waypoint mode toggles as this functionality doesn't exist in the component
 
   it('should handle empty route points object', () => {
-    component.currentStartPoint = mockCoordinates;
-    component.currentEndPoint = mockEndCoordinates;
+    // First set some route points
+    component.onRoutePointsUpdated({
+      start: mockCoordinates,
+      end: mockEndCoordinates,
+    });
 
     component.onRoutePointsUpdated({});
 
@@ -191,8 +195,8 @@ describe('MapPageComponent', () => {
 
     it('should open sidepanel when switching from mobile to desktop', () => {
       // Start as mobile with closed sidepanel
-      component.isMobile = true;
-      component.isSidepanelOpen = false;
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize'](); // Set to mobile first
 
       // Switch to desktop
       Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
@@ -203,8 +207,8 @@ describe('MapPageComponent', () => {
 
     it('should close sidepanel when switching from desktop to mobile', () => {
       // Start as desktop with open sidepanel
-      component.isMobile = false;
-      component.isSidepanelOpen = true;
+      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
+      component['checkScreenSize'](); // Set to desktop first
 
       // Switch to mobile
       Object.defineProperty(window, 'innerWidth', { value: 600, writable: true });
@@ -240,7 +244,9 @@ describe('MapPageComponent', () => {
     });
 
     it('should set mobile sidepanel width when on mobile', () => {
-      component.isMobile = true;
+      // Set mobile screen size
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
 
       component['updateCSSProperties']();
 
@@ -248,8 +254,9 @@ describe('MapPageComponent', () => {
     });
 
     it('should not set CSS properties when not on mobile', () => {
-      component.isMobile = false;
-      component.isSidepanelOpen = true;
+      // Set desktop screen size
+      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
+      component['checkScreenSize']();
 
       component['updateCSSProperties']();
 
@@ -257,8 +264,9 @@ describe('MapPageComponent', () => {
     });
 
     it('should not set CSS properties when on desktop with sidepanel closed', () => {
-      component.isMobile = false;
-      component.isSidepanelOpen = false;
+      // Set desktop screen size
+      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
+      component['checkScreenSize']();
 
       component['updateCSSProperties']();
 
@@ -292,8 +300,9 @@ describe('MapPageComponent', () => {
     });
 
     it('should handle backdrop click on mobile when sidepanel is open', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = true;
+      // Set mobile screen size and ensure sidepanel is open
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
 
       component.onBackdropClick();
 
@@ -301,8 +310,10 @@ describe('MapPageComponent', () => {
     });
 
     it('should not handle backdrop click on mobile when sidepanel is closed', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = false;
+      // Set mobile screen size and close sidepanel
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
+      component.toggleSidepanel(); // Close it
 
       component.onBackdropClick();
 
@@ -310,9 +321,9 @@ describe('MapPageComponent', () => {
     });
 
     it('should not handle backdrop click on desktop', () => {
-      component.isMobile = false;
-      component.isSidepanelOpen = true;
-
+      // Set desktop screen size
+      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
+      component['checkScreenSize']();
       component.onBackdropClick();
 
       expect(component.isSidepanelOpen).toBe(true);
@@ -328,8 +339,11 @@ describe('MapPageComponent', () => {
     });
 
     it('should prevent body scroll when mobile sidepanel is open', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = true;
+      // Set mobile screen size (sidepanel will be closed by default on mobile)
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
+      // Open sidepanel on mobile
+      component.toggleSidepanel();
 
       component['handleBodyScroll']();
 
@@ -339,8 +353,9 @@ describe('MapPageComponent', () => {
     });
 
     it('should restore body scroll when mobile sidepanel is closed', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = false;
+      // Set mobile screen size (sidepanel will be closed by default)
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
 
       component['handleBodyScroll']();
 
@@ -350,8 +365,9 @@ describe('MapPageComponent', () => {
     });
 
     it('should not affect body scroll on desktop', () => {
-      component.isMobile = false;
-      component.isSidepanelOpen = true;
+      // Set desktop screen size
+      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
+      component['checkScreenSize']();
 
       component['handleBodyScroll']();
 
@@ -390,8 +406,11 @@ describe('MapPageComponent', () => {
     });
 
     it('should store initial touch position on touchstart', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = true;
+      // Set mobile screen size and open sidepanel
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
+      component.toggleSidepanel(); // Open sidepanel on mobile
+
       // Create new mock touch event with updated touches
       const newTouchList = {
         0: { clientY: 150 } as Touch,
@@ -409,8 +428,11 @@ describe('MapPageComponent', () => {
     });
 
     it('should prevent overscroll at top on mobile', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = true;
+      // Set mobile screen size and open sidepanel
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
+      component.toggleSidepanel(); // Open sidepanel on mobile
+
       mockTarget.scrollTop = 0;
       (mockTarget as any)._initialTouchY = 150;
       // Create new mock touch list for this test
@@ -430,8 +452,11 @@ describe('MapPageComponent', () => {
     });
 
     it('should prevent overscroll at bottom on mobile', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = true;
+      // Set mobile screen size and open sidepanel
+      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
+      component['checkScreenSize']();
+      component.toggleSidepanel(); // Open sidepanel on mobile
+
       // Update mock target properties
       mockTarget = {
         ...mockTarget,

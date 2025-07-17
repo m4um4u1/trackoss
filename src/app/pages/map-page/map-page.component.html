@@ -20,7 +20,9 @@
   </button>
 
   <!-- Backdrop for mobile only -->
-  <div (click)="onBackdropClick()" *ngIf="isMobile && isSidepanelOpen" class="backdrop"></div>
+  @if (isMobile && isSidepanelOpen) {
+    <div (click)="onBackdropClick()" class="backdrop"></div>
+  }
 
   <div class="container-fluid h-100 p-0">
     <div class="row g-0 h-100 d-flex">
@@ -28,12 +30,7 @@
       <div
         (touchstart)="onSidepanelTouchStart($event)"
         (touchmove)="onSidepanelTouchMove($event)"
-        [class.closed]="!isSidepanelOpen"
-        [class.col-3]="!isMobile && isSidepanelOpen && !isTablet"
-        [class.col-4]="!isMobile && isSidepanelOpen && isTablet"
-        [class.desktop-sidepanel]="!isMobile"
-        [class.mobile-sidepanel]="isMobile"
-        [class.open]="isSidepanelOpen"
+        [ngClass]="sidepanelClasses()"
         class="sidepanel-container"
       >
         <app-map-sidepanel
@@ -46,13 +43,7 @@
       </div>
 
       <!-- Map Container -->
-      <div
-        [class.col-12]="!isMobile && !isSidepanelOpen"
-        [class.col]="!isMobile && isSidepanelOpen"
-        [class.desktop-map]="!isMobile"
-        [class.mobile-map]="isMobile"
-        class="map-container"
-      >
+      <div [ngClass]="mapClasses()" class="map-container">
         <app-libre-map
           (waypointsChanged)="onWaypointsChanged($event)"
           (startPointChanged)="onStartPointChanged($event)"

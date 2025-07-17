@@ -1,5 +1,5 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { combineLatest, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { RouteService } from '../../services/route.service';
@@ -10,7 +10,7 @@ import { SaveRouteModalComponent } from '../save-route-modal/save-route-modal.co
 @Component({
   selector: 'app-route-display',
   standalone: true,
-  imports: [CommonModule, SaveRouteModalComponent],
+  imports: [SaveRouteModalComponent],
   templateUrl: './route-display.component.html',
   styleUrls: ['./route-display.component.scss'],
 })

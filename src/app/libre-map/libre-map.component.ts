@@ -1,4 +1,17 @@
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  EventEmitter,
+  inject,
+  Input,
+  OnChanges,
+  OnDestroy,
+  OnInit,
+  Output,
+  signal,
+  SimpleChanges,
+} from '@angular/core';
 import { LngLatBounds, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { MapService } from '../services/map.service';
 import { RouteService } from '../services/route.service';
@@ -27,35 +40,51 @@ import { takeUntil } from 'rxjs/operators';
     NavigationControlDirective,
     ScaleControlDirective,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
-  public map?: MapLibreMap;
-  public mapStyleUrl: string = '';
-  startPosition: [number, number] = [13.404954, 52.520008];
+  // Modern Angular 20 dependency injection
+  private readonly mapService = inject(MapService);
+  private readonly routeService = inject(RouteService);
+  private readonly geolocationService = inject(GeolocationService);
 
+  // Signal-based state management
+  private readonly _map = signal<MapLibreMap | undefined>(undefined);
+  private readonly _mapStyleUrl = signal('');
+  private readonly _startPosition = signal<[number, number]>([13.404954, 52.520008]);
+
+  // Public readonly signals
+  readonly map = this._map.asReadonly();
+  readonly mapStyleUrl = this._mapStyleUrl.asReadonly();
+  readonly startPosition = this._startPosition.asReadonly();
+
+  // Input properties (keeping as @Input for parent communication)
   @Input() startPoint?: Coordinates;
   @Input() endPoint?: Coordinates;
   @Input() waypoints?: RoutePoint[];
   @Input() routeOptions?: RouteOptions;
   @Input() showRoute: boolean = true;
 
+  // Output events
   @Output() waypointsChanged = new EventEmitter<RoutePoint[]>();
   @Output() waypointAdded = new EventEmitter<RoutePoint>();
   @Output() startPointChanged = new EventEmitter<Coordinates>();
   @Output() endPointChanged = new EventEmitter<Coordinates>();
 
+  // Computed signals for derived state
+  readonly hasStartPoint = computed(() => !!this.startPoint);
+  readonly hasEndPoint = computed(() => !!this.endPoint);
+  readonly hasWaypoints = computed(() => !!this.waypoints && this.waypoints.length > 0);
+  readonly hasRoute = computed(() => (this.hasStartPoint() && this.hasEndPoint()) || this.hasWaypoints());
+  readonly isMapReady = computed(() => !!this._map());
+
+  // Private state
   private startMarker?: Marker;
   private endMarker?: Marker;
   private waypointMarkers: Marker[] = [];
   private routeSubscription?: Subscription;
   private multiWaypointRouteSubscription?: Subscription;
   private destroy$ = new Subject<void>();
-
-  constructor(
-    private mapService: MapService,
-    private routeService: RouteService,
-    private geolocationService: GeolocationService,
-  ) {}
 
   ngOnInit(): void {
     this.loadMapTiles();
@@ -82,7 +111,7 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   private loadMapTiles(): void {
     this.mapService.getMapTiles('outdoor').subscribe({
       next: (style) => {
-        this.mapStyleUrl = style;
+        this._mapStyleUrl.set(style);
       },
       error: (error) => {
         console.error('Error loading map tiles:', error);
@@ -91,7 +120,7 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private setupRouteSubscriptions(): void {
-    if (!this.map) return;
+    if (!this._map()) return;
 
     // Subscribe to route updates
     combineLatest([this.routeService.getCurrentRoute(), this.routeService.getCurrentMultiWaypointRoute()])
@@ -105,31 +134,31 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
    * Handle route updates for unified routing
    */
   private handleRouteUpdates(routeResult: RouteResult | null, multiWaypointRoute: MultiWaypointRoute | null): void {
-    if (!this.map) return;
+    if (!this._map()) return;
 
     // Prioritize multi-waypoint route if waypoints exist
     if (this.waypoints && this.waypoints.length >= 2) {
       if (multiWaypointRoute) {
-        this.routeService.updateMultiWaypointRouteOnMap(this.map, multiWaypointRoute);
+        this.routeService.updateMultiWaypointRouteOnMap(this._map(), multiWaypointRoute);
       } else {
-        this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
+        this.routeService.removeRouteFromMap(this._map(), 'multi-route', 'multi-route');
       }
       // Clear simple route when using waypoints
-      this.routeService.removeRouteFromMap(this.map, 'route', 'route');
+      this.routeService.removeRouteFromMap(this._map(), 'route', 'route');
     } else {
       // Use simple routing for start/end points only
       if (routeResult) {
-        this.routeService.updateRouteOnMap(this.map, routeResult);
+        this.routeService.updateRouteOnMap(this._map(), routeResult);
       } else {
-        this.routeService.removeRouteFromMap(this.map, 'route', 'route');
+        this.routeService.removeRouteFromMap(this._map(), 'route', 'route');
       }
       // Clear waypoint route when using simple routing
-      this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
+      this.routeService.removeRouteFromMap(this._map(), 'multi-route', 'multi-route');
     }
   }
 
   public onMapLoad(mapInstance: MapLibreMap): void {
-    this.map = mapInstance;
+    this._map.set(mapInstance);
     this.updateMarkersAndBounds();
     this.setupMapClickHandler();
     this.setupRouteSubscriptions();
@@ -137,17 +166,20 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   public resizeMap(): void {
-    if (this.map) {
+    const mapInstance = this._map();
+    if (mapInstance) {
       setTimeout(() => {
-        if (this.map) {
-          this.map.resize();
+        const currentMap = this._map();
+        if (currentMap) {
+          currentMap.resize();
         }
       }, 100);
     }
   }
 
   private updateMarkersAndBounds(changes?: SimpleChanges): void {
-    if (!this.map) return;
+    const mapInstance = this._map();
+    if (!mapInstance) return;
 
     let needsViewUpdate = false;
 
@@ -159,7 +191,7 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
           const color = this.getWaypointColor(waypoint.type);
           const marker = new Marker({ color })
             .setLngLat([waypoint.coordinates.lon, waypoint.coordinates.lat])
-            .addTo(this.map!);
+            .addTo(mapInstance);
           this.waypointMarkers.push(marker);
         });
         needsViewUpdate = true;
@@ -190,17 +222,17 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
         // Create start marker (green)
         this.startMarker = new Marker({ color: '#22c55e' })
           .setLngLat([this.startPoint.lon, this.startPoint.lat])
-          .addTo(this.map!);
+          .addTo(mapInstance);
 
         // Create end marker (red)
         this.endMarker = new Marker({ color: '#ef4444' })
           .setLngLat([this.endPoint.lon, this.endPoint.lat])
-          .addTo(this.map!);
+          .addTo(mapInstance);
 
         const bounds = new LngLatBounds();
         bounds.extend([this.startPoint.lon, this.startPoint.lat]);
         bounds.extend([this.endPoint.lon, this.endPoint.lat]);
-        this.map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+        mapInstance.fitBounds(bounds, { padding: 60, maxZoom: 15 });
 
         // Calculate and display route if enabled
         if (this.showRoute) {
@@ -211,33 +243,34 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
         this.clearStartEndMarkers();
         this.startMarker = new Marker({ color: '#22c55e' })
           .setLngLat([this.startPoint.lon, this.startPoint.lat])
-          .addTo(this.map!);
-        this.map.setCenter([this.startPoint.lon, this.startPoint.lat]);
-        this.map.setZoom(12);
+          .addTo(mapInstance);
+        mapInstance.setCenter([this.startPoint.lon, this.startPoint.lat]);
+        mapInstance.setZoom(12);
       } else if (this.endPoint) {
         // Handle single end point
         this.clearStartEndMarkers();
         this.endMarker = new Marker({ color: '#ef4444' })
           .setLngLat([this.endPoint.lon, this.endPoint.lat])
-          .addTo(this.map!);
-        this.map.setCenter([this.endPoint.lon, this.endPoint.lat]);
-        this.map.setZoom(12);
+          .addTo(mapInstance);
+        mapInstance.setCenter([this.endPoint.lon, this.endPoint.lat]);
+        mapInstance.setZoom(12);
       } else {
         // Handle cleared state - no points or waypoints
         this.clearStartEndMarkers();
         this.clearWaypointMarkers();
-        if (this.map.getSource('route')) {
-          this.routeService.removeRouteFromMap(this.map);
+        if (mapInstance.getSource('route')) {
+          this.routeService.removeRouteFromMap(mapInstance);
         }
-        if (this.map.getSource('multi-route')) {
-          this.routeService.removeRouteFromMap(this.map, 'multi-route', 'multi-route');
+        if (mapInstance.getSource('multi-route')) {
+          this.routeService.removeRouteFromMap(mapInstance, 'multi-route', 'multi-route');
         }
       }
     }
   }
 
   private calculateAndDisplayRoute(): void {
-    if (!this.map || !this.startPoint || !this.endPoint) return;
+    const mapInstance = this._map();
+    if (!mapInstance || !this.startPoint || !this.endPoint) return;
 
     // Unsubscribe from previous route calculation if any
     if (this.routeSubscription) {
@@ -261,14 +294,15 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
    * Update map view to show all waypoints with proper bounds checking
    */
   private updateMapViewForWaypoints(): void {
-    if (!this.map || !this.waypoints || this.waypoints.length === 0) return;
+    const mapInstance = this._map();
+    if (!mapInstance || !this.waypoints || this.waypoints.length === 0) return;
 
     try {
       if (this.waypoints.length === 1) {
         // Single waypoint - center on it
         const waypoint = this.waypoints[0];
-        this.map.setCenter([waypoint.coordinates.lon, waypoint.coordinates.lat]);
-        this.map.setZoom(14);
+        mapInstance.setCenter([waypoint.coordinates.lon, waypoint.coordinates.lat]);
+        mapInstance.setZoom(14);
       } else {
         // Multiple waypoints - fit bounds to show all
         const bounds = new LngLatBounds();
@@ -278,18 +312,16 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
 
         // Check if bounds are valid before fitting
         if (bounds.getNorthEast() && bounds.getSouthWest()) {
-          if (this.map) {
-            // Fit bounds with padding and max zoom
-            this.map.fitBounds(bounds, {
-              padding: 60,
-              maxZoom: 15,
-            });
-          }
+          // Fit bounds with padding and max zoom
+          mapInstance.fitBounds(bounds, {
+            padding: 60,
+            maxZoom: 15,
+          });
         } else {
           // Fallback: center on first waypoint
           const firstWaypoint = this.waypoints![0];
-          this.map.setCenter([firstWaypoint.coordinates.lon, firstWaypoint.coordinates.lat]);
-          this.map.setZoom(12);
+          mapInstance.setCenter([firstWaypoint.coordinates.lon, firstWaypoint.coordinates.lat]);
+          mapInstance.setZoom(12);
         }
       }
     } catch (error) {
@@ -297,8 +329,8 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
       // Fallback: center on first waypoint
       if (this.waypoints.length > 0) {
         const firstWaypoint = this.waypoints[0];
-        this.map.setCenter([firstWaypoint.coordinates.lon, firstWaypoint.coordinates.lat]);
-        this.map.setZoom(12);
+        mapInstance.setCenter([firstWaypoint.coordinates.lon, firstWaypoint.coordinates.lat]);
+        mapInstance.setZoom(12);
       }
     }
   }
@@ -336,9 +368,10 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
    * Setup map click handler for unified routing
    */
   private setupMapClickHandler(): void {
-    if (!this.map) return;
+    const mapInstance = this._map();
+    if (!mapInstance) return;
 
-    this.map.on('click', (e) => {
+    mapInstance.on('click', (e) => {
       this.handleMapClick(e.lngLat.lng, e.lngLat.lat);
     });
   }
@@ -519,9 +552,10 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
     if (!hasPoints) {
       this.geolocationService.requestLocationWithConsent().subscribe({
         next: (userLocation: Coordinates) => {
-          if (this.map) {
+          const mapInstance = this._map();
+          if (mapInstance) {
             // Use flyTo for smooth animation to user location
-            this.map.flyTo({
+            mapInstance.flyTo({
               center: [userLocation.lon, userLocation.lat],
               zoom: 14,
               duration: 2000, // 2 second animation
@@ -544,9 +578,10 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
 
     this.geolocationService.requestLocationWithConsent().subscribe({
       next: (userLocation: Coordinates) => {
-        if (this.map) {
+        const mapInstance = this._map();
+        if (mapInstance) {
           // Use flyTo for smooth animation to user location
-          this.map.flyTo({
+          mapInstance.flyTo({
             center: [userLocation.lon, userLocation.lat],
             zoom: 14,
             duration: 2000, // 2 second animation

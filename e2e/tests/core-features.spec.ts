@@ -24,91 +24,67 @@ test('is geolocation control working', async ({ mapPage }) => {
   await expect(mapPage.geolocateControlLocator).toBeVisible();
 });
 
-test('is waypoint mode toggle working', async ({ mapPage }) => {
+test('is adding waypoints working', async ({ mapPage }) => {
   await mapPage.navigateToMap();
-  await mapPage.enableWaypointMode();
-  await expect(mapPage.waypointModeToggleLocator).toBeChecked();
-  await mapPage.disableWaypointMode();
-  await expect(mapPage.waypointModeToggleLocator).not.toBeChecked();
-});
 
-test('is waypoint mode content shown correctly', async ({ page }) => {
-  const mapPage = new MapPage(page);
-  await mapPage.navigateToMap();
-  await mapPage.enableWaypointMode();
-  await expect(mapPage.waypointModeContentLocator).toBeVisible();
-  await mapPage.disableWaypointMode();
-  await expect(mapPage.waypointModeContentLocator).not.toBeVisible();
-});
+  // Initially should be in traditional routing mode
+  expect(await mapPage.isWaypointModeEnabled()).toBe(false);
 
-test('is adding waypoints working', async ({ page }) => {
-  const mapPage = new MapPage(page);
-  await mapPage.navigateToMap();
-  await mapPage.enableWaypointMode();
-  await mapPage.clickOnMap(300, 300);
-  await mapPage.waitForWaypointUpdate(1);
+  // Add first waypoint by text input (this automatically enables waypoint mode)
+  await mapPage.addWaypointByText('Berlin, Germany');
   expect(await mapPage.getWaypointCount()).toBe(1);
-  await mapPage.clickOnMap(400, 400);
-  await mapPage.waitForWaypointUpdate(2);
-  expect(await mapPage.getWaypointCount()).toBe(2);
-});
-
-test('is removing waypoints working', async ({ page }) => {
-  const mapPage = new MapPage(page);
-  await mapPage.navigateToMap();
-
-  // Ensure map is fully loaded before enabling waypoint mode
-  await expect(mapPage.mapCanvasLocator).toBeVisible();
-  await mapPage.enableWaypointMode();
-
-  // Wait a bit for waypoint mode to be fully active
-  await page.waitForTimeout(1000);
-
-  // Add first waypoint
-  await mapPage.clickOnMap(300, 300);
-  await mapPage.waitForWaypointUpdate(1);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
 
   // Add second waypoint
-  await mapPage.clickOnMap(400, 400);
-  await mapPage.waitForWaypointUpdate(2);
-
-  // Verify waypoints were added
-  const initialCount = await mapPage.getWaypointCount();
-  if (initialCount >= 2) {
-    await mapPage.removeWaypoint(0);
-    expect(await mapPage.getWaypointCount()).toBe(initialCount - 1);
-  } else {
-    // If waypoints weren't added properly, just verify the system is stable
-    await expect(mapPage.mapCanvasLocator).toBeVisible();
-  }
+  await mapPage.addWaypointByText('Munich, Germany');
+  expect(await mapPage.getWaypointCount()).toBe(2);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
 });
 
-test('map should remain visible when adding multiple waypoints', async ({ page }) => {
-  const mapPage = new MapPage(page);
+test('is removing waypoints working', async ({ mapPage }) => {
+  await mapPage.navigateToMap();
+
+  // Ensure map is fully loaded
+  await expect(mapPage.mapCanvasLocator).toBeVisible();
+
+  // Add first waypoint by text input (automatically enables waypoint mode)
+  await mapPage.addWaypointByText('Berlin, Germany');
+  expect(await mapPage.getWaypointCount()).toBe(1);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
+
+  // Add second waypoint
+  await mapPage.addWaypointByText('Munich, Germany');
+  expect(await mapPage.getWaypointCount()).toBe(2);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
+
+  // Remove first waypoint
+  await mapPage.removeWaypoint(0);
+  expect(await mapPage.getWaypointCount()).toBe(1);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
+});
+
+test('map should remain visible when adding multiple waypoints', async ({ mapPage }) => {
   await mapPage.navigateToMap();
 
   // Ensure map is initially visible
   await expect(mapPage.mapCanvasLocator).toBeVisible();
 
-  // Enable waypoint mode
-  await mapPage.enableWaypointMode();
-  await expect(mapPage.waypointModeToggleLocator).toBeChecked();
+  // Start in traditional route mode
+  expect(await mapPage.isWaypointModeEnabled()).toBe(false);
 
-  // Add first waypoint and verify map is still visible
-  await mapPage.clickOnMap(250, 250);
-  await mapPage.waitForWaypointUpdate(1);
+  // Add first waypoint and verify map is still visible (automatically enables waypoint mode)
+  await mapPage.addWaypointByText('Berlin, Germany');
   expect(await mapPage.getWaypointCount()).toBe(1);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
   await expect(mapPage.mapCanvasLocator).toBeVisible();
 
   // Add second waypoint and verify map is still visible (this was the problematic case)
-  await mapPage.clickOnMap(350, 350);
-  await mapPage.waitForWaypointUpdate(2);
+  await mapPage.addWaypointByText('Munich, Germany');
   expect(await mapPage.getWaypointCount()).toBe(2);
   await expect(mapPage.mapCanvasLocator).toBeVisible();
 
   // Add third waypoint to ensure continued stability
-  await mapPage.clickOnMap(450, 450);
-  await mapPage.waitForWaypointUpdate(3);
+  await mapPage.addWaypointByText('Hamburg, Germany');
   expect(await mapPage.getWaypointCount()).toBe(3);
   await expect(mapPage.mapCanvasLocator).toBeVisible();
 
@@ -124,60 +100,58 @@ test('map should remain visible when adding multiple waypoints', async ({ page }
   await expect(mapPage.scaleControlLocator).toBeVisible();
 });
 
-test('map should handle rapid waypoint addition without disappearing', async ({ page }) => {
-  const mapPage = new MapPage(page);
+test('map should handle rapid waypoint addition without disappearing', async ({ mapPage }) => {
   await mapPage.navigateToMap();
 
-  // Enable waypoint mode
-  await mapPage.enableWaypointMode();
+  // Start in traditional routing mode (no waypoints)
+  expect(await mapPage.isWaypointModeEnabled()).toBe(false);
 
-  // Add waypoints more rapidly but with shorter waits
-  const clickPositions = [
-    { x: 200, y: 200 },
-    { x: 300, y: 250 },
-    { x: 400, y: 300 },
-  ];
+  // Add waypoints by text input (automatically enables waypoint mode)
+  const waypointLocations = ['Berlin, Germany', 'Munich, Germany', 'Hamburg, Germany'];
 
-  for (let i = 0; i < clickPositions.length; i++) {
-    const pos = clickPositions[i];
-    await mapPage.clickOnMap(pos.x, pos.y);
+  for (let i = 0; i < waypointLocations.length; i++) {
+    const location = waypointLocations[i];
+    await mapPage.addWaypointByText(location);
 
-    // Wait for this specific waypoint to be added
-    await mapPage.waitForWaypointUpdate(i + 1);
+    // Verify waypoint was added
+    expect(await mapPage.getWaypointCount()).toBe(i + 1);
 
-    // Verify map is still visible after each click
+    // Verify map is still visible after each addition
     await expect(mapPage.mapCanvasLocator).toBeVisible();
+
+    // After first waypoint, should be in waypoint mode
+    if (i === 0) {
+      expect(await mapPage.isWaypointModeEnabled()).toBe(true);
+    }
   }
 
-  // Verify all waypoints were added after the loop
-  expect(await mapPage.getWaypointCount()).toBe(clickPositions.length);
-
   // Final verification that all waypoints are present and map is still visible
-  expect(await mapPage.getWaypointCount()).toBe(clickPositions.length);
+  expect(await mapPage.getWaypointCount()).toBe(waypointLocations.length);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
   await expect(mapPage.mapCanvasLocator).toBeVisible();
 });
 
-test('map should remain stable when switching between waypoint and route modes', async ({ page }) => {
-  const mapPage = new MapPage(page);
+test('map should remain stable when switching between waypoint and route modes', async ({ mapPage }) => {
   await mapPage.navigateToMap();
 
-  // Start in route mode, verify map is visible
+  // Start in traditional routing mode, verify map is visible
   await expect(mapPage.mapCanvasLocator).toBeVisible();
+  expect(await mapPage.isWaypointModeEnabled()).toBe(false);
 
-  // Switch to waypoint mode and add one waypoint
-  await mapPage.enableWaypointMode();
-  await mapPage.clickOnMap(300, 300);
-  await mapPage.waitForWaypointUpdate(1);
+  // Add waypoint by text input (automatically enables waypoint mode)
+  await mapPage.addWaypointByText('Berlin, Germany');
 
-  // Verify map is still visible with waypoint
+  // Verify map is still visible with waypoint and in waypoint mode
   await expect(mapPage.mapCanvasLocator).toBeVisible();
   expect(await mapPage.getWaypointCount()).toBe(1);
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
 
-  // Switch back to route mode
+  // Switch back to traditional routing mode by clearing waypoints
   await mapPage.disableWaypointMode();
 
-  // Verify map is still visible after mode switch
+  // Verify map is still visible and back in traditional routing mode
   await expect(mapPage.mapCanvasLocator).toBeVisible();
+  expect(await mapPage.isWaypointModeEnabled()).toBe(false);
 });
 
 // Integration Tests (using real APIs)
@@ -185,8 +159,8 @@ integrationTest.describe('Integration Tests with Real APIs', () => {
   integrationTest('should calculate real route without mocks', async ({ mapPage }) => {
     await mapPage.navigateToMap();
 
-    // Ensure we're not in waypoint mode
-    if (await mapPage.waypointModeToggleLocator.isChecked()) {
+    // Ensure we're in traditional routing mode (no waypoints)
+    if (await mapPage.isWaypointModeEnabled()) {
       await mapPage.disableWaypointMode();
     }
 
@@ -244,12 +218,12 @@ test('route calculator should be visible when not in waypoint mode', async ({ pa
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're not in waypoint mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
-  // Verify route calculator is visible
+  // Verify route calculator is visible when no waypoints
   await expect(mapPage.routeCalculatorLocator).toBeVisible();
 
   // Check that start and end point inputs are visible
@@ -264,10 +238,11 @@ test('route calculator should be hidden when in waypoint mode', async ({ page })
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Enable waypoint mode
+  // Enable waypoint mode by adding a waypoint
   await mapPage.enableWaypointMode();
+  expect(await mapPage.isWaypointModeEnabled()).toBe(true);
 
-  // Route calculator with location inputs should not be visible
+  // Route calculator with location inputs should not be visible when waypoints exist
   // (only route options might be visible when waypoints >= 2)
   const startPointInput = page.getByRole('textbox', { name: /start point/i });
   const endPointInput = page.getByRole('textbox', { name: /end point/i });
@@ -280,8 +255,8 @@ test('should be able to enter start and end points', async ({ page }) => {
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're not in waypoint mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -304,8 +279,8 @@ test('calculate route button should be disabled when fields are empty', async ({
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -325,8 +300,8 @@ test('should handle route calculation attempt', async ({ page }) => {
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -364,8 +339,8 @@ test('should display route information after successful calculation', async ({ p
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -395,8 +370,8 @@ test('should be able to clear calculated route', async ({ page }) => {
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -430,8 +405,8 @@ test('should handle transportation mode selection', async ({ page }) => {
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -459,8 +434,8 @@ test('should calculate different routes for different transportation modes', asy
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -507,8 +482,8 @@ test('should handle invalid location gracefully', async ({ page }) => {
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -536,8 +511,8 @@ test('should maintain map stability during route calculations', async ({ page })
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -573,8 +548,8 @@ test('should show calculating state during route calculation', async ({ page }) 
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -608,8 +583,8 @@ test('should display route polyline on map for normal routing', async ({ mapPage
 
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -703,8 +678,8 @@ test('should clear route polyline when route is cleared', async ({ page }) => {
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Ensure we're not in waypoint mode
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Ensure we're in traditional routing mode (no waypoints)
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
@@ -778,8 +753,8 @@ test('should not show both route types simultaneously', async ({ page }) => {
   const mapPage = new MapPage(page);
   await mapPage.navigateToMap();
 
-  // Test normal route first
-  if (await mapPage.waypointModeToggleLocator.isChecked()) {
+  // Test normal route first - ensure we're in traditional routing mode
+  if (await mapPage.isWaypointModeEnabled()) {
     await mapPage.disableWaypointMode();
   }
 
