@@ -1,5 +1,5 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import {
   ArrowDown,
@@ -11,7 +11,6 @@ import {
   LucideAngularModule,
   Plus,
   Route,
-  ToggleLeft,
   Trash2,
 } from 'lucide-angular';
 import { MultiWaypointRoute, RoutePoint } from '../../models/route';
@@ -20,9 +19,10 @@ import { Coordinates } from '../../models/coordinates';
 @Component({
   selector: 'app-waypoint-manager',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [FormsModule, LucideAngularModule],
   templateUrl: './waypoint-manager.component.html',
   styleUrls: ['./waypoint-manager.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WaypointManagerComponent {
   // Lucide icons
@@ -35,40 +35,70 @@ export class WaypointManagerComponent {
   readonly ArrowDownIcon = ArrowDown;
   readonly Trash2Icon = Trash2;
   readonly CheckCircleIcon = CheckCircle;
-  readonly ToggleLeftIcon = ToggleLeft;
 
-  @Input() waypoints: RoutePoint[] = [];
+  @Input() set waypoints(value: RoutePoint[]) {
+    this._waypoints.set(value);
+  }
+  get waypoints(): RoutePoint[] {
+    return this._waypoints();
+  }
   @Input() multiWaypointRoute: MultiWaypointRoute | null = null;
 
+  // Internal signal for waypoints to make computed signals reactive
+  private readonly _waypoints = signal<RoutePoint[]>([]);
+
+  // Output events
   @Output() waypointsChanged = new EventEmitter<RoutePoint[]>();
   @Output() waypointRemoved = new EventEmitter<string>();
   @Output() waypointsCleared = new EventEmitter<void>();
   @Output() routeCalculated = new EventEmitter<void>();
 
-  newWaypointText: string = '';
-  isAddingWaypoint: boolean = false;
+  // Signal-based internal state management
+  private readonly _newWaypointText = signal('');
+  private readonly _isAddingWaypoint = signal(false);
 
-  constructor() {}
+  // Public readonly signals
+  readonly newWaypointText = this._newWaypointText.asReadonly();
+  readonly isAddingWaypoint = this._isAddingWaypoint.asReadonly();
+
+  // Computed signals for derived state
+  readonly hasWaypoints = computed(() => this._waypoints().length > 0);
+  readonly canAddWaypoint = computed(() => this._newWaypointText().trim().length > 0 && !this._isAddingWaypoint());
+  readonly canCalculateRoute = computed(() => this._waypoints().length >= 2);
+  readonly waypointCount = computed(() => this._waypoints().length);
+  readonly totalDistance = computed(() => {
+    if (!this.multiWaypointRoute?.legs) return 0;
+    return this.multiWaypointRoute.legs.reduce((total, leg) => total + (leg.distance || 0), 0);
+  });
+  readonly totalDuration = computed(() => {
+    if (!this.multiWaypointRoute?.legs) return 0;
+    return this.multiWaypointRoute.legs.reduce((total, leg) => total + (leg.duration || 0), 0);
+  });
+
+  // Methods to update signals from template
+  updateNewWaypointText(value: string): void {
+    this._newWaypointText.set(value);
+  }
 
   /**
    * Add a new waypoint by geocoding text input
    */
   async addWaypoint(): Promise<void> {
-    if (!this.newWaypointText.trim() || this.isAddingWaypoint) return;
+    if (!this.canAddWaypoint()) return;
 
-    this.isAddingWaypoint = true;
+    this._isAddingWaypoint.set(true);
 
     try {
-      const coordinates = await this.geocodeLocation(this.newWaypointText);
+      const coordinates = await this.geocodeLocation(this._newWaypointText());
       if (coordinates) {
         // Create a copy of the current waypoints array
-        const updatedWaypoints = [...this.waypoints];
+        const updatedWaypoints = [...this._waypoints()];
 
         const newWaypoint: RoutePoint = {
           coordinates,
           type: updatedWaypoints.length === 0 ? 'start' : 'waypoint',
           id: `waypoint-${Date.now()}`,
-          name: this.newWaypointText,
+          name: this._newWaypointText(),
           order: updatedWaypoints.length,
         };
 
@@ -86,15 +116,19 @@ export class WaypointManagerComponent {
 
         updatedWaypoints.push(newWaypoint);
 
-        // Update the local waypoints array and emit the change
-        this.waypoints = updatedWaypoints;
+        // Update internal signal immediately
+        this._waypoints.set([...updatedWaypoints]);
+
+        // Emit the change - parent will update the waypoints input
         this.waypointsChanged.emit([...updatedWaypoints]);
-        this.newWaypointText = '';
+        this._newWaypointText.set('');
+      } else {
+        console.error('Failed to geocode location');
       }
     } catch (error) {
       console.error('Error adding waypoint:', error);
     } finally {
-      this.isAddingWaypoint = false;
+      this._isAddingWaypoint.set(false);
     }
   }
 
@@ -102,7 +136,7 @@ export class WaypointManagerComponent {
    * Remove a waypoint by ID
    */
   removeWaypoint(waypointId: string): void {
-    const updatedWaypoints = this.waypoints.filter((wp) => wp.id !== waypointId);
+    const updatedWaypoints = this._waypoints().filter((wp) => wp.id !== waypointId);
 
     // Reassign types and orders
     updatedWaypoints.forEach((wp, index) => {
@@ -116,7 +150,10 @@ export class WaypointManagerComponent {
       }
     });
 
-    this.waypoints = updatedWaypoints;
+    // Update internal signal immediately
+    this._waypoints.set([...updatedWaypoints]);
+
+    // Emit the change - parent will update the waypoints input
     this.waypointsChanged.emit([...updatedWaypoints]);
     this.waypointRemoved.emit(waypointId);
   }
@@ -125,6 +162,9 @@ export class WaypointManagerComponent {
    * Clear all waypoints
    */
   clearAllWaypoints(): void {
+    // Update internal signal immediately
+    this._waypoints.set([]);
+
     this.waypointsChanged.emit([]);
     this.waypointsCleared.emit();
   }
@@ -134,11 +174,16 @@ export class WaypointManagerComponent {
    */
   moveWaypointUp(index: number): void {
     if (index > 0) {
-      const temp = this.waypoints[index];
-      this.waypoints[index] = this.waypoints[index - 1];
-      this.waypoints[index - 1] = temp;
-      this.updateWaypointOrders();
-      this.waypointsChanged.emit([...this.waypoints]);
+      const waypoints = [...this._waypoints()];
+      const temp = waypoints[index];
+      waypoints[index] = waypoints[index - 1];
+      waypoints[index - 1] = temp;
+      this.updateWaypointOrdersInArray(waypoints);
+
+      // Update internal signal immediately
+      this._waypoints.set([...waypoints]);
+
+      this.waypointsChanged.emit([...waypoints]);
     }
   }
 
@@ -146,12 +191,17 @@ export class WaypointManagerComponent {
    * Move waypoint down in the order
    */
   moveWaypointDown(index: number): void {
-    if (index < this.waypoints.length - 1) {
-      const temp = this.waypoints[index];
-      this.waypoints[index] = this.waypoints[index + 1];
-      this.waypoints[index + 1] = temp;
-      this.updateWaypointOrders();
-      this.waypointsChanged.emit([...this.waypoints]);
+    if (index < this._waypoints().length - 1) {
+      const waypoints = [...this._waypoints()];
+      const temp = waypoints[index];
+      waypoints[index] = waypoints[index + 1];
+      waypoints[index + 1] = temp;
+      this.updateWaypointOrdersInArray(waypoints);
+
+      // Update internal signal immediately
+      this._waypoints.set([...waypoints]);
+
+      this.waypointsChanged.emit([...waypoints]);
     }
   }
 
@@ -159,7 +209,7 @@ export class WaypointManagerComponent {
    * Calculate route through all waypoints
    */
   calculateRoute(): void {
-    if (this.waypoints.length >= 2) {
+    if (this._waypoints().length >= 2) {
       this.routeCalculated.emit();
     }
   }
@@ -221,11 +271,20 @@ export class WaypointManagerComponent {
    * Update waypoint orders and types after reordering
    */
   private updateWaypointOrders(): void {
-    this.waypoints.forEach((wp, index) => {
+    const waypoints = [...this._waypoints()];
+    this.updateWaypointOrdersInArray(waypoints);
+    this.waypointsChanged.emit([...waypoints]);
+  }
+
+  /**
+   * Update waypoint orders and types in a given array
+   */
+  private updateWaypointOrdersInArray(waypoints: RoutePoint[]): void {
+    waypoints.forEach((wp, index) => {
       wp.order = index;
       if (index === 0) {
         wp.type = 'start';
-      } else if (index === this.waypoints.length - 1) {
+      } else if (index === waypoints.length - 1) {
         wp.type = 'end';
       } else {
         wp.type = 'waypoint';

@@ -30,7 +30,8 @@
                 type="text"
                 class="form-control"
                 id="routeName"
-                [(ngModel)]="routeName"
+                [ngModel]="routeName()"
+                (ngModelChange)="updateRouteName($event)"
                 name="routeName"
                 placeholder="Enter route name"
                 required
@@ -44,7 +45,8 @@
               <textarea
                 class="form-control"
                 id="routeDescription"
-                [(ngModel)]="routeDescription"
+                [ngModel]="routeDescription()"
+                (ngModelChange)="updateRouteDescription($event)"
                 name="routeDescription"
                 rows="3"
                 placeholder="Describe your route..."
@@ -58,19 +60,28 @@
               <select
                 class="form-select"
                 id="routeType"
-                [(ngModel)]="routeType"
+                [ngModel]="routeType()"
+                (ngModelChange)="updateRouteType($event)"
                 name="routeType"
-                (change)="onRouteTypeChange()"
               >
-                <option *ngFor="let option of routeTypeOptions" [ngValue]="option.value">
-                  {{ option.label }}
-                </option>
+                @for (option of routeTypeOptions; track option.value) {
+                  <option [ngValue]="option.value">
+                    {{ option.label }}
+                  </option>
+                }
               </select>
             </div>
 
             <!-- Public/Private Toggle -->
             <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="isPublic" [(ngModel)]="isPublic" name="isPublic" />
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="isPublic"
+                [ngModel]="isPublic()"
+                (ngModelChange)="updateIsPublic($event)"
+                name="isPublic"
+              />
               <label class="form-check-label fw-bold" for="isPublic"> Make route public </label>
               <div class="form-text">Public routes can be discovered and used by other users</div>
             </div>
@@ -84,15 +95,16 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Difficulty Level</label>
               <div class="d-flex align-items-center gap-2">
-                <span
-                  *ngFor="let star of getStarArray(5); let i = index"
-                  class="star-rating"
-                  [class.active]="i < difficulty"
-                  (click)="setRating('difficulty', i + 1)"
-                >
-                  ★
-                </span>
-                <span class="ms-2 text-muted">({{ difficulty }}/5)</span>
+                @for (star of getStarArray(5); track $index) {
+                  <span
+                    class="star-rating"
+                    [class.active]="$index < difficulty()"
+                    (click)="setRating('difficulty', $index + 1)"
+                  >
+                    ★
+                  </span>
+                }
+                <span class="ms-2 text-muted">({{ difficulty() }}/5)</span>
               </div>
             </div>
 
@@ -100,15 +112,16 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Scenic Rating</label>
               <div class="d-flex align-items-center gap-2">
-                <span
-                  *ngFor="let star of getStarArray(5); let i = index"
-                  class="star-rating"
-                  [class.active]="i < scenicRating"
-                  (click)="setRating('scenic', i + 1)"
-                >
-                  ★
-                </span>
-                <span class="ms-2 text-muted">({{ scenicRating }}/5)</span>
+                @for (star of getStarArray(5); track $index) {
+                  <span
+                    class="star-rating"
+                    [class.active]="$index < scenicRating()"
+                    (click)="setRating('scenic', $index + 1)"
+                  >
+                    ★
+                  </span>
+                }
+                <span class="ms-2 text-muted">({{ scenicRating() }}/5)</span>
               </div>
             </div>
 
@@ -116,45 +129,70 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Safety Rating</label>
               <div class="d-flex align-items-center gap-2">
-                <span
-                  *ngFor="let star of getStarArray(5); let i = index"
-                  class="star-rating"
-                  [class.active]="i < safetyRating"
-                  (click)="setRating('safety', i + 1)"
-                >
-                  ★
-                </span>
-                <span class="ms-2 text-muted">({{ safetyRating }}/5)</span>
+                @for (star of getStarArray(5); track $index) {
+                  <span
+                    class="star-rating"
+                    [class.active]="$index < safetyRating()"
+                    (click)="setRating('safety', $index + 1)"
+                  >
+                    ★
+                  </span>
+                }
+                <span class="ms-2 text-muted">({{ safetyRating() }}/5)</span>
               </div>
             </div>
 
             <!-- Surface Type -->
             <div class="mb-3">
               <label for="surfaceType" class="form-label fw-bold">Surface Type</label>
-              <select class="form-select" id="surfaceType" [(ngModel)]="surfaceType" name="surfaceType">
-                <option *ngFor="let option of surfaceTypeOptions" [ngValue]="option.value">
-                  {{ option.label }}
-                </option>
+              <select
+                class="form-select"
+                id="surfaceType"
+                [ngModel]="surfaceType()"
+                (ngModelChange)="updateSurfaceType($event)"
+                name="surfaceType"
+              >
+                @for (option of surfaceTypeOptions; track option.value) {
+                  <option [ngValue]="option.value">
+                    {{ option.label }}
+                  </option>
+                }
               </select>
             </div>
 
             <!-- Terrain -->
             <div class="mb-3">
               <label for="terrain" class="form-label fw-bold">Terrain</label>
-              <select class="form-select" id="terrain" [(ngModel)]="terrain" name="terrain">
-                <option *ngFor="let option of terrainOptions" [ngValue]="option.value">
-                  {{ option.label }}
-                </option>
+              <select
+                class="form-select"
+                id="terrain"
+                [ngModel]="terrain()"
+                (ngModelChange)="updateTerrain($event)"
+                name="terrain"
+              >
+                @for (option of terrainOptions; track option.value) {
+                  <option [ngValue]="option.value">
+                    {{ option.label }}
+                  </option>
+                }
               </select>
             </div>
 
             <!-- Traffic Level -->
             <div class="mb-3">
               <label for="trafficLevel" class="form-label fw-bold">Traffic Level</label>
-              <select class="form-select" id="trafficLevel" [(ngModel)]="trafficLevel" name="trafficLevel">
-                <option *ngFor="let option of trafficLevelOptions" [ngValue]="option.value">
-                  {{ option.label }}
-                </option>
+              <select
+                class="form-select"
+                id="trafficLevel"
+                [ngModel]="trafficLevel()"
+                (ngModelChange)="updateTrafficLevel($event)"
+                name="trafficLevel"
+              >
+                @for (option of trafficLevelOptions; track option.value) {
+                  <option [ngValue]="option.value">
+                    {{ option.label }}
+                  </option>
+                }
               </select>
             </div>
 
@@ -164,12 +202,15 @@
               <select
                 class="form-select"
                 id="technicalDifficulty"
-                [(ngModel)]="technicalDifficulty"
+                [ngModel]="technicalDifficulty()"
+                (ngModelChange)="updateTechnicalDifficulty($event)"
                 name="technicalDifficulty"
               >
-                <option *ngFor="let option of technicalDifficultyOptions" [ngValue]="option.value">
-                  {{ option.label }}
-                </option>
+                @for (option of technicalDifficultyOptions; track option) {
+                  <option [ngValue]="option.value">
+                    {{ option.label }}
+                  </option>
+                }
               </select>
             </div>
           </div>
@@ -182,20 +223,22 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Best Time of Day</label>
               <div class="row">
-                <div class="col-6 col-md-4" *ngFor="let option of timeOfDayOptions">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      [id]="'timeOfDay_' + option.value"
-                      [checked]="isTimeOfDaySelected(option.value)"
-                      (change)="onTimeOfDayChange(option.value, $event)"
-                    />
-                    <label class="form-check-label" [for]="'timeOfDay_' + option.value">
-                      {{ option.label }}
-                    </label>
+                @for (option of timeOfDayOptions; track option.value) {
+                  <div class="col-6 col-md-4">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        [id]="'timeOfDay_' + option.value"
+                        [checked]="isTimeOfDaySelected(option.value)"
+                        (change)="onTimeOfDayChange(option.value, $event)"
+                      />
+                      <label class="form-check-label" [for]="'timeOfDay_' + option.value">
+                        {{ option.label }}
+                      </label>
+                    </div>
                   </div>
-                </div>
+                }
               </div>
             </div>
 
@@ -203,20 +246,22 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Best Season</label>
               <div class="row">
-                <div class="col-6 col-md-3" *ngFor="let option of seasonOptions">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      [id]="'season_' + option.value"
-                      [checked]="isSeasonSelected(option.value)"
-                      (change)="onSeasonChange(option.value, $event)"
-                    />
-                    <label class="form-check-label" [for]="'season_' + option.value">
-                      {{ option.label }}
-                    </label>
+                @for (option of seasonOptions; track option.value) {
+                  <div class="col-6 col-md-3">
+                    <div class="form-check">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        [id]="'season_' + option.value"
+                        [checked]="isSeasonSelected(option.value)"
+                        (change)="onSeasonChange(option.value, $event)"
+                      />
+                      <label class="form-check-label" [for]="'season_' + option.value">
+                        {{ option.label }}
+                      </label>
+                    </div>
                   </div>
-                </div>
+                }
               </div>
             </div>
           </div>
@@ -231,7 +276,8 @@
               <textarea
                 class="form-control"
                 id="notes"
-                [(ngModel)]="notes"
+                [ngModel]="notes()"
+                (ngModelChange)="updateNotes($event)"
                 name="notes"
                 rows="3"
                 placeholder="Any additional notes about this route..."
@@ -246,7 +292,8 @@
                 type="text"
                 class="form-control"
                 id="tags"
-                [(ngModel)]="tags"
+                [ngModel]="tags()"
+                (ngModelChange)="updateTags($event)"
                 name="tags"
                 placeholder="Enter tags separated by commas (e.g., scenic, challenging, family-friendly)"
                 maxlength="200"
@@ -256,22 +303,28 @@
           </div>
 
           <!-- Error/Success Messages -->
-          <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
-            {{ errorMessage }}
-          </div>
+          @if (errorMessage()) {
+            <div class="alert alert-danger" role="alert">
+              {{ errorMessage() }}
+            </div>
+          }
 
-          <div *ngIf="successMessage" class="alert alert-success" role="alert">
-            {{ successMessage }}
-          </div>
+          @if (successMessage()) {
+            <div class="alert alert-success" role="alert">
+              {{ successMessage() }}
+            </div>
+          }
         </form>
       </div>
 
       <!-- Modal Footer -->
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving">Cancel</button>
-        <button type="button" class="btn btn-primary" (click)="saveRoute()" [disabled]="isSaving || !routeName.trim()">
-          <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-          {{ isSaving ? 'Saving...' : 'Save Route' }}
+        <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="saveRoute()" [disabled]="isSaving() || !isFormValid()">
+          @if (isSaving()) {
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          }
+          {{ isSaving() ? 'Saving...' : 'Save Route' }}
         </button>
       </div>
     </div>
@@ -279,4 +332,6 @@
 </div>
 
 <!-- Modal Backdrop -->
-<div class="modal-backdrop fade" [class.show]="isVisible" *ngIf="isVisible" (click)="closeModal()"></div>
+@if (isVisible) {
+  <div class="modal-backdrop fade" [class.show]="isVisible" (click)="closeModal()"></div>
+}

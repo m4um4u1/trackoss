@@ -1,59 +1,69 @@
 <!-- Route Display - handles both regular and multi-waypoint routes -->
-<div *ngIf="hasRoute()" class="card border rounded-3 bg-light p-3 mb-3">
-  <div>
-    <h4 class="mb-3 text-dark">Route Information</h4>
-    <div class="d-flex flex-column gap-2">
-      <div *ngIf="getDistance()" class="d-flex justify-content-between align-items-center py-2 border-bottom">
-        <span class="fw-bold text-muted">{{ multiWaypointRoute ? 'Total Distance:' : 'Distance:' }}</span>
-        <span class="text-dark">{{ formatDistance(getDistance()!) }}</span>
+@if (hasRoute()) {
+  <div class="card border rounded-3 bg-light p-3 mb-3">
+    <div>
+      <h4 class="mb-3 text-dark">Route Information</h4>
+      <div class="d-flex flex-column gap-2">
+        @if (getDistance()) {
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="fw-bold text-muted">{{ multiWaypointRoute ? 'Total Distance:' : 'Distance:' }}</span>
+            <span class="text-dark">{{ formatDistance(getDistance()!) }}</span>
+          </div>
+        }
+        @if (getDuration()) {
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span class="fw-bold text-muted">{{ multiWaypointRoute ? 'Total Duration:' : 'Duration:' }}</span>
+            <span class="text-dark">{{ formatDuration(getDuration()!) }}</span>
+          </div>
+        }
+        <!-- Regular route start/end points -->
+        @if (routeResult && !multiWaypointRoute) {
+          <div>
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <span class="fw-bold text-muted">Start:</span>
+              <span class="text-dark">{{ formatCoordinates(routeResult.startPoint) }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <span class="fw-bold text-muted">End:</span>
+              <span class="text-dark">{{ formatCoordinates(routeResult.endPoint) }}</span>
+            </div>
+          </div>
+        }
+        <!-- Multi-waypoint route summary -->
+        @if (multiWaypointRoute) {
+          <div>
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <span class="fw-bold text-muted">Waypoints:</span>
+              <span class="text-dark">{{ multiWaypointRoute.waypoints.length }}</span>
+            </div>
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <span class="fw-bold text-muted">Route Segments:</span>
+              <span class="text-dark">{{ multiWaypointRoute.legs?.length || 0 }}</span>
+            </div>
+          </div>
+        }
       </div>
-      <div *ngIf="getDuration()" class="d-flex justify-content-between align-items-center py-2 border-bottom">
-        <span class="fw-bold text-muted">{{ multiWaypointRoute ? 'Total Duration:' : 'Duration:' }}</span>
-        <span class="text-dark">{{ formatDuration(getDuration()!) }}</span>
-      </div>
-
-      <!-- Regular route start/end points -->
-      <div *ngIf="routeResult && !multiWaypointRoute">
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <span class="fw-bold text-muted">Start:</span>
-          <span class="text-dark">{{ formatCoordinates(routeResult.startPoint) }}</span>
-        </div>
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <span class="fw-bold text-muted">End:</span>
-          <span class="text-dark">{{ formatCoordinates(routeResult.endPoint) }}</span>
-        </div>
-      </div>
-
-      <!-- Multi-waypoint route summary -->
-      <div *ngIf="multiWaypointRoute">
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <span class="fw-bold text-muted">Waypoints:</span>
-          <span class="text-dark">{{ multiWaypointRoute.waypoints.length }}</span>
-        </div>
-        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-          <span class="fw-bold text-muted">Route Segments:</span>
-          <span class="text-dark">{{ multiWaypointRoute.legs?.length || 0 }}</span>
-        </div>
-      </div>
+      <!-- Waypoint details are now shown in the waypoint manager to avoid duplication -->
     </div>
-
-    <!-- Waypoint details are now shown in the waypoint manager to avoid duplication -->
+    @if (showActions) {
+      <div class="d-flex gap-2 mt-3 flex-column flex-xl-row">
+        <button class="btn btn-success" (click)="openSaveModal()">Save Route</button>
+        <button class="btn btn-primary" (click)="multiWaypointRoute ? exportMultiWaypointRoute() : exportRoute()">
+          Export Route
+        </button>
+        <button class="btn btn-secondary" (click)="multiWaypointRoute ? shareMultiWaypointRoute() : shareRoute()">
+          Share Route
+        </button>
+      </div>
+    }
   </div>
+}
 
-  <div *ngIf="showActions" class="d-flex gap-2 mt-3 flex-column flex-xl-row">
-    <button class="btn btn-success" (click)="openSaveModal()">Save Route</button>
-    <button class="btn btn-primary" (click)="multiWaypointRoute ? exportMultiWaypointRoute() : exportRoute()">
-      Export Route
-    </button>
-    <button class="btn btn-secondary" (click)="multiWaypointRoute ? shareMultiWaypointRoute() : shareRoute()">
-      Share Route
-    </button>
+@if (!hasRoute() && showNoRouteMessage) {
+  <div class="no-route">
+    <p>No route calculated yet.</p>
   </div>
-</div>
-
-<div class="no-route" *ngIf="!hasRoute() && showNoRouteMessage">
-  <p>No route calculated yet.</p>
-</div>
+}
 
 <!-- Save Route Modal -->
 <app-save-route-modal

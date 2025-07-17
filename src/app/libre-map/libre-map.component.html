@@ -1,9 +1,9 @@
 <mgl-map
   id="map"
-  [style]="this.mapStyleUrl"
+  [style]="mapStyleUrl()"
   [zoom]="[9]"
   [canvasContextAttributes]="{ preserveDrawingBuffer: true }"
-  [center]="this.startPosition"
+  [center]="startPosition()"
   (mapLoad)="onMapLoad($event)"
 >
   <mgl-control

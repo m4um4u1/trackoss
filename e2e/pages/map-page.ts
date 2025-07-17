@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { expect, Locator, Page } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class MapPage extends BasePage {
@@ -121,75 +121,104 @@ export class MapPage extends BasePage {
   }
 
   /**
-   * Get waypoint mode toggle locator for web-first assertions
-   */
-  get waypointModeToggleLocator(): Locator {
-    return this.page.getByRole('checkbox', { name: /waypoint mode/i });
-  }
-
-  /**
-   * Check if waypoint mode is currently enabled
+   * Check if waypoint mode is currently enabled (based on presence of waypoints)
    */
   async isWaypointModeEnabled(): Promise<boolean> {
-    const toggle = this.page.getByRole('checkbox', { name: /waypoint mode/i });
-    return await toggle.isChecked();
+    // Waypoint mode is enabled when there are waypoints present
+    const waypointCount = await this.getWaypointCount();
+    return waypointCount > 0;
   }
 
   /**
-   * Enable waypoint mode by clicking the toggle
+   * Enable waypoint mode by adding a waypoint
    */
   async enableWaypointMode() {
-    const toggle = this.page.getByRole('checkbox', { name: /waypoint mode/i });
-    const isEnabled = await toggle.isChecked();
+    const isEnabled = await this.isWaypointModeEnabled();
 
     if (!isEnabled) {
-      await toggle.click();
-      // Wait for the toggle state to change with timeout and fallback
-      try {
-        await this.page.waitForFunction(
-          () => {
-            const toggleEl = document.querySelector('#waypointModeToggle') as HTMLInputElement;
-            return toggleEl && toggleEl.checked;
-          },
-          { timeout: 5000 },
-        );
-      } catch {
-        // Fallback: wait for network idle
-        await this.waitForNetworkIdle();
-      }
+      // Add a waypoint to enable waypoint mode
+      await this.addWaypointByText('Berlin, Germany');
+      await this.waitForWaypointUpdate(1);
     }
   }
 
   /**
-   * Disable waypoint mode by clicking the toggle
+   * Disable waypoint mode by clearing all waypoints
    */
   async disableWaypointMode() {
-    const toggle = this.page.getByRole('checkbox', { name: /waypoint mode/i });
-    const isEnabled = await toggle.isChecked();
+    const isEnabled = await this.isWaypointModeEnabled();
 
     if (isEnabled) {
-      await toggle.click();
-      // Wait for the toggle state to change with timeout and fallback
-      try {
-        await this.page.waitForFunction(
-          () => {
-            const toggleEl = document.querySelector('#waypointModeToggle') as HTMLInputElement;
-            return toggleEl && !toggleEl.checked;
-          },
-          { timeout: 5000 },
-        );
-      } catch {
-        // Fallback: wait for network idle
-        await this.waitForNetworkIdle();
-      }
+      // Clear all waypoints to disable waypoint mode
+      await this.clearAllWaypoints();
+      await this.waitForWaypointUpdate(0);
     }
   }
 
   /**
-   * Get waypoint mode content locator for web-first assertions
+   * Get waypoint mode content locator (waypoint manager component)
    */
   get waypointModeContentLocator(): Locator {
-    return this.page.getByRole('textbox', { name: /add waypoint/i });
+    return this.page.locator('app-waypoint-manager');
+  }
+
+  /**
+   * Legacy property for backward compatibility with tests
+   * Now checks if waypoint manager is visible
+   */
+  get waypointModeToggleLocator(): Locator {
+    return this.waypointModeContentLocator;
+  }
+
+  /**
+   * Add a waypoint by typing text in the waypoint input
+   */
+  async addWaypointByText(location: string): Promise<void> {
+    // Wait for the waypoint manager to be visible
+    await this.page.waitForSelector('#newWaypoint', { timeout: 10000 });
+
+    const waypointInput = this.page.locator('#newWaypoint');
+    await waypointInput.fill(location);
+
+    const addButton = this.page.locator('button:has-text("Add")');
+    await expect(addButton).toBeEnabled();
+    await addButton.click();
+
+    // Wait for the geocoding request to complete and waypoint to be added
+    await this.waitForNetworkIdle();
+
+    // Additional wait for the UI to update
+    await this.page.waitForTimeout(1000);
+  }
+
+  /**
+   * Clear all waypoints using the clear button or by removing them individually
+   */
+  async clearAllWaypoints(): Promise<void> {
+    // Try to find and click clear button first
+    const clearButton = this.page.locator('button:has-text("Clear")');
+    if (await clearButton.isVisible()) {
+      await clearButton.click();
+      await this.waitForNetworkIdle();
+      return;
+    }
+
+    // If no clear button, remove waypoints individually
+    let waypointCount = await this.getWaypointCount();
+    while (waypointCount > 0) {
+      const removeButtons = this.page.locator('button[title="Remove waypoint"]');
+      const firstRemoveButton = removeButtons.first();
+
+      if (await firstRemoveButton.isVisible()) {
+        await firstRemoveButton.click();
+        await this.waitForNetworkIdle();
+        // Wait for UI to update
+        await this.page.waitForTimeout(500);
+        waypointCount = await this.getWaypointCount();
+      } else {
+        break;
+      }
+    }
   }
 
   /**
@@ -198,21 +227,6 @@ export class MapPage extends BasePage {
   async getWaypointCount(): Promise<number> {
     const waypointItems = this.page.locator('.waypoints-list .waypoint-item');
     return await waypointItems.count();
-  }
-
-  /**
-   * Clear all waypoints using the clear button
-   */
-  async clearAllWaypoints() {
-    const clearButton = this.page.getByRole('button', { name: /clear all/i });
-    if (await clearButton.isVisible()) {
-      await clearButton.click();
-      // Wait for waypoints to be cleared from the list
-      await this.page.waitForFunction(() => {
-        const waypointItems = document.querySelectorAll('.waypoints-list .waypoint-item');
-        return waypointItems.length === 0;
-      });
-    }
   }
 
   /**

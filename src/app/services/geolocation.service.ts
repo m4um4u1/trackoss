@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Coordinates } from '../models/coordinates';
 
@@ -6,7 +6,22 @@ import { Coordinates } from '../models/coordinates';
   providedIn: 'root',
 })
 export class GeolocationService {
-  constructor() {}
+  // Signal-based state management
+  private readonly _currentPosition = signal<Coordinates | null>(null);
+  private readonly _isLocating = signal(false);
+  private readonly _locationError = signal<string | null>(null);
+  private readonly _permissionStatus = signal<'granted' | 'denied' | 'prompt' | 'unknown'>('unknown');
+
+  // Public readonly signals
+  readonly currentPosition = this._currentPosition.asReadonly();
+  readonly isLocating = this._isLocating.asReadonly();
+  readonly locationError = this._locationError.asReadonly();
+  readonly permissionStatus = this._permissionStatus.asReadonly();
+
+  // Computed signals
+  readonly hasLocation = computed(() => this._currentPosition() !== null);
+  readonly canRequestLocation = computed(() => this._permissionStatus() !== 'denied' && !this._isLocating());
+  readonly locationAvailable = computed(() => this.isGeolocationSupported());
 
   /**
    * Get the user's current position using the browser's geolocation API
@@ -14,8 +29,14 @@ export class GeolocationService {
    */
   getCurrentPosition(): Observable<Coordinates> {
     return new Observable<Coordinates>((observer) => {
+      // Set loading state
+      this._isLocating.set(true);
+      this._locationError.set(null);
+
       // Check if geolocation is supported
       if (!navigator.geolocation) {
+        this._isLocating.set(false);
+        this._locationError.set('Geolocation is not supported by this browser');
         observer.complete();
         return;
       }
@@ -34,10 +55,20 @@ export class GeolocationService {
             lat: position.coords.latitude,
             lon: position.coords.longitude,
           };
+
+          // Update signals
+          this._currentPosition.set(coordinates);
+          this._isLocating.set(false);
+          this._locationError.set(null);
+
           observer.next(coordinates);
           observer.complete();
         },
-        () => {
+        (error) => {
+          // Update error state
+          this._isLocating.set(false);
+          this._locationError.set(this.getLocationErrorMessage(error));
+
           observer.complete();
         },
         options,
@@ -53,6 +84,7 @@ export class GeolocationService {
     return new Observable<Coordinates>((observer) => {
       // Check if geolocation is supported
       if (!navigator.geolocation) {
+        this._locationError.set('Geolocation is not supported by this browser');
         observer.complete();
         return;
       }
@@ -62,6 +94,8 @@ export class GeolocationService {
         navigator.permissions
           .query({ name: 'geolocation' })
           .then((result) => {
+            this._permissionStatus.set(result.state as 'granted' | 'denied' | 'prompt');
+
             if (result.state === 'granted') {
               // Permission already granted, get location
               this.getCurrentPosition().subscribe({
@@ -76,6 +110,8 @@ export class GeolocationService {
               });
             } else {
               // Permission denied
+              this._permissionStatus.set('denied');
+              this._locationError.set('Location access denied by user');
               observer.complete();
             }
           })
@@ -102,5 +138,29 @@ export class GeolocationService {
    */
   isGeolocationSupported(): boolean {
     return 'geolocation' in navigator;
+  }
+
+  /**
+   * Clear the current position and reset state
+   */
+  clearPosition(): void {
+    this._currentPosition.set(null);
+    this._locationError.set(null);
+  }
+
+  /**
+   * Get a user-friendly error message from GeolocationPositionError
+   */
+  private getLocationErrorMessage(error: GeolocationPositionError): string {
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        return 'Location access denied by user';
+      case error.POSITION_UNAVAILABLE:
+        return 'Location information is unavailable';
+      case error.TIMEOUT:
+        return 'Location request timed out';
+      default:
+        return 'An unknown error occurred while retrieving location';
+    }
   }
 }

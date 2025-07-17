@@ -17,18 +17,18 @@
             class="form-control"
             id="newWaypoint"
             placeholder="Enter location (e.g., Berlin, Germany)"
-            [(ngModel)]="newWaypointText"
+            [ngModel]="newWaypointText()"
+            (ngModelChange)="updateNewWaypointText($event)"
             (keyup.enter)="addWaypoint()"
-            [disabled]="isAddingWaypoint"
+            [disabled]="isAddingWaypoint()"
           />
-          <button
-            class="btn btn-primary"
-            type="button"
-            (click)="addWaypoint()"
-            [disabled]="!newWaypointText.trim() || isAddingWaypoint"
-          >
-            <lucide-icon *ngIf="!isAddingWaypoint" [img]="PlusIcon" size="16"></lucide-icon>
-            <lucide-icon *ngIf="isAddingWaypoint" [img]="Loader2Icon" class="animate-spin" size="16"></lucide-icon>
+          <button class="btn btn-primary" type="button" (click)="addWaypoint()" [disabled]="!canAddWaypoint()">
+            @if (!isAddingWaypoint()) {
+              <lucide-icon [img]="PlusIcon" size="16"></lucide-icon>
+            }
+            @if (isAddingWaypoint()) {
+              <lucide-icon [img]="Loader2Icon" class="animate-spin" size="16"></lucide-icon>
+            }
             Add
           </button>
         </div>
@@ -39,98 +39,106 @@
       </div>
 
       <!-- Route Points List -->
-      <div class="waypoints-list" *ngIf="waypoints.length > 0">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h6 class="mb-0">
-            <lucide-icon [img]="ListIcon" class="me-2" size="16"></lucide-icon>
-            Route Points ({{ waypoints.length }})
-          </h6>
-          <!-- Total route statistics -->
-          <div class="route-totals" *ngIf="multiWaypointRoute">
-            <small class="text-muted">
-              <lucide-icon [img]="RouteIcon" class="me-1" size="14"></lucide-icon>
-              {{ formatDistance(multiWaypointRoute.totalDistance || 0) }} •
-              {{ formatDuration(multiWaypointRoute.totalDuration || 0) }}
-            </small>
-          </div>
-        </div>
-
-        <div class="waypoint-container" *ngFor="let waypoint of waypoints; let i = index">
-          <!-- Waypoint Item -->
-          <div class="waypoint-item">
-            <div class="d-flex align-items-center">
-              <div class="waypoint-number me-3">
-                {{ i + 1 }}
+      @if (hasWaypoints()) {
+        <div class="waypoints-list">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0">
+              <lucide-icon [img]="ListIcon" class="me-2" size="16"></lucide-icon>
+              Route Points ({{ waypointCount() }})
+            </h6>
+            <!-- Total route statistics -->
+            @if (multiWaypointRoute) {
+              <div class="route-totals">
+                <small class="text-muted">
+                  <lucide-icon [img]="RouteIcon" class="me-1" size="14"></lucide-icon>
+                  {{ formatDistance(totalDistance()) }} •
+                  {{ formatDuration(totalDuration()) }}
+                </small>
               </div>
-
-              <div class="waypoint-info flex-grow-1">
-                <div class="waypoint-name">
-                  {{ getWaypointDisplayName(waypoint) }}
+            }
+          </div>
+          @for (waypoint of waypoints; track waypoint; let i = $index) {
+            <div class="waypoint-container">
+              <!-- Waypoint Item -->
+              <div class="waypoint-item">
+                <div class="d-flex align-items-center">
+                  <div class="waypoint-number me-3">
+                    {{ i + 1 }}
+                  </div>
+                  <div class="waypoint-info flex-grow-1">
+                    <div class="waypoint-name">
+                      {{ getWaypointDisplayName(waypoint) }}
+                    </div>
+                    <small class="text-muted">
+                      {{ waypoint.coordinates.lat.toFixed(4) }}, {{ waypoint.coordinates.lon.toFixed(4) }}
+                    </small>
+                  </div>
+                  <div class="waypoint-controls">
+                    <button
+                      class="btn btn-sm btn-outline-secondary me-1"
+                      (click)="moveWaypointUp(i)"
+                      [disabled]="i === 0"
+                      title="Move up"
+                    >
+                      <lucide-icon [img]="ArrowUpIcon" size="14"></lucide-icon>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-secondary me-1"
+                      (click)="moveWaypointDown(i)"
+                      [disabled]="i === waypoints.length - 1"
+                      title="Move down"
+                    >
+                      <lucide-icon [img]="ArrowDownIcon" size="14"></lucide-icon>
+                    </button>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      (click)="removeWaypoint(waypoint.id!)"
+                      title="Remove waypoint"
+                    >
+                      <lucide-icon [img]="Trash2Icon" size="14"></lucide-icon>
+                    </button>
+                  </div>
                 </div>
-                <small class="text-muted">
-                  {{ waypoint.coordinates.lat.toFixed(4) }}, {{ waypoint.coordinates.lon.toFixed(4) }}
-                </small>
               </div>
-
-              <div class="waypoint-controls">
-                <button
-                  class="btn btn-sm btn-outline-secondary me-1"
-                  (click)="moveWaypointUp(i)"
-                  [disabled]="i === 0"
-                  title="Move up"
-                >
-                  <lucide-icon [img]="ArrowUpIcon" size="14"></lucide-icon>
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-secondary me-1"
-                  (click)="moveWaypointDown(i)"
-                  [disabled]="i === waypoints.length - 1"
-                  title="Move down"
-                >
-                  <lucide-icon [img]="ArrowDownIcon" size="14"></lucide-icon>
-                </button>
-                <button
-                  class="btn btn-sm btn-outline-danger"
-                  (click)="removeWaypoint(waypoint.id!)"
-                  title="Remove waypoint"
-                >
-                  <lucide-icon [img]="Trash2Icon" size="14"></lucide-icon>
-                </button>
-              </div>
+              <!-- Route Segment Info (between waypoints) -->
+              @if (i < waypoints.length - 1 && getRouteLegInfo(i)) {
+                <div class="route-segment">
+                  <div class="segment-line">
+                    <div class="segment-info">
+                      <lucide-icon [img]="ArrowDownIcon" class="text-muted me-1" size="14"></lucide-icon>
+                      <small class="text-muted">
+                        {{ formatDistance(getRouteLegInfo(i)!.distance) }} •
+                        {{ formatDuration(getRouteLegInfo(i)!.duration) }}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
-          </div>
-
-          <!-- Route Segment Info (between waypoints) -->
-          <div class="route-segment" *ngIf="i < waypoints.length - 1 && getRouteLegInfo(i)">
-            <div class="segment-line">
-              <div class="segment-info">
-                <lucide-icon [img]="ArrowDownIcon" class="text-muted me-1" size="14"></lucide-icon>
-                <small class="text-muted">
-                  {{ formatDistance(getRouteLegInfo(i)!.distance) }} •
-                  {{ formatDuration(getRouteLegInfo(i)!.duration) }}
-                </small>
-              </div>
-            </div>
-          </div>
+          }
         </div>
-      </div>
+      }
 
       <!-- Instructions -->
-      <div class="alert alert-info mt-3" *ngIf="waypoints.length === 0">
-        <lucide-icon [img]="InfoIcon" class="me-2" size="16"></lucide-icon>
-        <strong>Getting Started:</strong>
-        <ul class="mb-0 mt-2">
-          <li>Add waypoints by typing locations above</li>
-          <li>Or click directly on the map to place waypoints</li>
-          <li>You need at least 2 waypoints to calculate a route</li>
-          <li>Drag waypoints in the list to reorder them</li>
-        </ul>
-      </div>
+      @if (!hasWaypoints()) {
+        <div class="alert alert-info mt-3">
+          <lucide-icon [img]="InfoIcon" class="me-2" size="16"></lucide-icon>
+          <strong>Getting Started:</strong>
+          <ul class="mb-0 mt-2">
+            <li>Add waypoints by typing locations above</li>
+            <li>Or click directly on the map to place waypoints</li>
+            <li>You need at least 2 waypoints to calculate a route</li>
+            <li>Drag waypoints in the list to reorder them</li>
+          </ul>
+        </div>
+      }
 
-      <div class="alert alert-success mt-3" *ngIf="waypoints.length === 1">
-        <lucide-icon [img]="CheckCircleIcon" class="me-2" size="16"></lucide-icon>
-        Great! Add one more waypoint to calculate your route.
-      </div>
+      @if (waypointCount() === 1) {
+        <div class="alert alert-success mt-3">
+          <lucide-icon [img]="CheckCircleIcon" class="me-2" size="16"></lucide-icon>
+          Great! Add one more waypoint to calculate your route.
+        </div>
+      }
     </div>
   </div>
 </div>

@@ -122,10 +122,10 @@ describe('LibreMapComponent', () => {
   });
 
   it('should initialize with default values', () => {
-    expect(component.startPosition).toEqual([13.404954, 52.520008]);
+    expect(component.startPosition()).toEqual([13.404954, 52.520008]);
     expect(component.showRoute).toBeTrue();
     // mapStyleUrl is initially empty and gets set after ngOnInit is called
-    expect(component.mapStyleUrl).toBe('');
+    expect(component.mapStyleUrl()).toBe('');
   });
 
   it('should load map tiles on init', () => {
@@ -133,7 +133,7 @@ describe('LibreMapComponent', () => {
     component.ngOnInit();
 
     expect(mapService.getMapTiles).toHaveBeenCalledWith('outdoor');
-    expect(component.mapStyleUrl).toBe('mock-style-url');
+    expect(component.mapStyleUrl()).toBe('mock-style-url');
   });
 
   it('should have requestUserLocationConsent method', () => {
@@ -160,8 +160,10 @@ describe('LibreMapComponent', () => {
   it('should fly to user location when consent granted', () => {
     const mockMap = {
       flyTo: jest.fn(),
+      on: jest.fn(), // Add the missing 'on' method for event handling
     };
-    component.map = mockMap as any;
+    // Set up the map by calling onMapLoad to properly initialize the signal
+    component.onMapLoad(mockMap as any);
 
     geolocationService.requestLocationWithConsent.mockReturnValue(of(mockCoordinates));
 
@@ -235,7 +237,7 @@ describe('LibreMapComponent', () => {
     };
 
     component.onMapLoad(mockMapInstance as any);
-    expect(component.map).toBe(mockMapInstance as any);
+    expect(component.map()).toBe(mockMapInstance as any);
     expect(mockMapInstance.on).toHaveBeenCalledWith('click', (expect as any).any(Function));
   });
 

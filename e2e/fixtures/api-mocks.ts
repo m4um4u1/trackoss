@@ -100,6 +100,17 @@ export const mockResponses = {
       },
     },
   },
+
+  // Geocoding responses for different locations
+  geocoding: {
+    'Berlin, Germany': [{ lat: '52.520008', lon: '13.404954' }],
+    'Munich, Germany': [{ lat: '48.137154', lon: '11.576124' }],
+    'Hamburg, Germany': [{ lat: '53.551086', lon: '9.993682' }],
+    'Frankfurt, Germany': [{ lat: '50.110924', lon: '8.682127' }],
+    'Test Location': [{ lat: '50.0', lon: '10.0' }],
+    Berlin: [{ lat: '52.520008', lon: '13.404954' }],
+    Munich: [{ lat: '48.137154', lon: '11.576124' }],
+  },
 };
 
 /**
@@ -120,6 +131,7 @@ export class ApiMockManager {
     await this.mockConfigApi();
     await this.mockMapTileApi();
     await this.mockRoutingApi();
+    await this.mockGeocodingApi();
   }
 
   /**
@@ -200,6 +212,30 @@ export class ApiMockManager {
       }
     });
     this.mocks.set('multiWaypointRouting', response);
+  }
+
+  /**
+   * Mock the geocoding API (Nominatim OpenStreetMap)
+   */
+  async mockGeocodingApi(): Promise<void> {
+    // Mock Nominatim OpenStreetMap geocoding API
+    await this.page.route('**/nominatim.openstreetmap.org/**', (route) => {
+      const url = route.request().url();
+      const searchParams = new URL(url).searchParams;
+      const query = searchParams.get('q') || '';
+
+      // Find matching geocoding response
+      const geocodingResponses = mockResponses.geocoding as Record<string, any>;
+      const response = geocodingResponses[query] || geocodingResponses['Test Location'];
+
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(response),
+      });
+    });
+
+    this.mocks.set('geocoding', mockResponses.geocoding);
   }
 
   /**

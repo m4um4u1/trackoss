@@ -1,5 +1,6 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { NgClass } from '@angular/common';
+
 import { Columns, LucideAngularModule } from 'lucide-angular';
 import { LibreMapComponent } from '../../libre-map/libre-map.component';
 import { MapSidepanelComponent } from '../../map-sidepanel/map-sidepanel.component';
@@ -9,7 +10,7 @@ import { RouteService } from '../../services/route.service';
 
 @Component({
   selector: 'app-map-page',
-  imports: [CommonModule, LucideAngularModule, LibreMapComponent, MapSidepanelComponent],
+  imports: [NgClass, LucideAngularModule, LibreMapComponent, MapSidepanelComponent],
   templateUrl: './map-page.component.html',
   styleUrl: './map-page.component.scss',
   standalone: true,
@@ -30,6 +31,7 @@ export class MapPageComponent implements OnInit, OnDestroy {
   constructor(
     private routeService: RouteService,
     private elementRef: ElementRef,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -182,5 +184,45 @@ export class MapPageComponent implements OnInit, OnDestroy {
   public onMultiWaypointRouteCalculated(multiWaypointRoute: MultiWaypointRoute): void {
     // The route service will automatically update the map through the LibreMapComponent
     console.log('Multi-waypoint route calculated:', multiWaypointRoute);
+  }
+
+  /**
+   * Get CSS classes for sidepanel based on current state
+   */
+  public sidepanelClasses(): string {
+    const classes = [];
+
+    if (this.isMobile) {
+      classes.push('mobile-sidepanel');
+      classes.push(this.isSidepanelOpen ? 'open' : 'closed');
+    } else {
+      classes.push('desktop-sidepanel');
+      classes.push(this.isSidepanelOpen ? 'open' : 'closed');
+
+      // Add responsive column classes for desktop/tablet
+      if (this.isTablet) {
+        classes.push('col-4'); // Wider on tablet
+      } else {
+        classes.push('col-3'); // Narrower on desktop
+      }
+    }
+
+    return classes.join(' ');
+  }
+
+  /**
+   * Get CSS classes for map container based on current state
+   */
+  public mapClasses(): string {
+    const classes = [];
+
+    if (this.isMobile) {
+      classes.push('mobile-map');
+    } else {
+      classes.push('desktop-map');
+      classes.push('col'); // Take remaining space
+    }
+
+    return classes.join(' ');
   }
 }

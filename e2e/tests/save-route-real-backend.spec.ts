@@ -81,10 +81,7 @@ integrationTest.describe('Save Route Real Backend Tests (Cleanup Verification)',
     });
   }
 
-  integrationTest.skip('should create real route and track for cleanup', async ({ page }) => {
-    // This test is skipped by default to avoid creating unnecessary test data
-    // Remove .skip to run this test when verifying cleanup functionality
-
+  integrationTest('should create real route', async ({ page }) => {
     // Set up network request monitoring
     const routeRequests: any[] = [];
     page.on('request', (request) => {
@@ -114,7 +111,7 @@ integrationTest.describe('Save Route Real Backend Tests (Cleanup Verification)',
     // Fill in route data with cleanup test identifier
     const testRouteName = `Cleanup Test Route ${Date.now()}`;
     await mapPage.fillRouteName(testRouteName);
-    await mapPage.fillRouteDescription('This route was created to test the cleanup functionality');
+    await mapPage.fillRouteDescription('This route was created');
     await mapPage.fillNotes('This route should be automatically cleaned up after the test');
     await mapPage.fillTags('cleanup, test, e2e, automated');
 
@@ -129,7 +126,7 @@ integrationTest.describe('Save Route Real Backend Tests (Cleanup Verification)',
 
     const requestData = JSON.parse(routeRequests[0].postData || '{}');
     expect(requestData.name).toBe(testRouteName);
-    expect(requestData.description).toBe('This route was created to test the cleanup functionality');
+    expect(requestData.description).toBe('This route was created');
 
     // The route should be tracked for cleanup by the global teardown
     console.log('Real route created for cleanup testing');
