@@ -2,10 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { of } from 'rxjs';
 
 import { WaypointManagerComponent } from './waypoint-manager.component';
-import { RoutePoint, MultiWaypointRoute } from '../../models/route';
+import { MultiWaypointRoute, RoutePoint } from '../../models/route';
 import { Coordinates } from '../../models/coordinates';
 
 describe('WaypointManagerComponent', () => {
@@ -65,28 +64,12 @@ describe('WaypointManagerComponent', () => {
 
   it('should initialize with default values', () => {
     expect(component.waypoints).toEqual([]);
-    expect(component.enableWaypointMode).toBe(false);
     expect(component.multiWaypointRoute).toBeNull();
     expect(component.newWaypointText).toBe('');
     expect(component.isAddingWaypoint).toBe(false);
   });
 
-  it('should toggle waypoint mode', () => {
-    jest.spyOn(component.waypointModeToggled, 'emit');
-    jest.spyOn(component, 'clearAllWaypoints');
-
-    component.enableWaypointMode = false;
-    component.toggleWaypointMode();
-
-    expect(component.enableWaypointMode).toBe(true);
-    expect(component.waypointModeToggled.emit).toHaveBeenCalledWith(true);
-
-    component.toggleWaypointMode();
-
-    expect(component.enableWaypointMode).toBe(false);
-    expect(component.waypointModeToggled.emit).toHaveBeenCalledWith(false);
-    expect(component.clearAllWaypoints).toHaveBeenCalled();
-  });
+  // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
 
   it('should add waypoint successfully', async () => {
     jest.spyOn(component.waypointsChanged, 'emit');
@@ -513,13 +496,7 @@ describe('WaypointManagerComponent', () => {
       expect(component.waypoints).toEqual(newWaypoints);
     });
 
-    it('should handle enableWaypointMode input changes', () => {
-      component.enableWaypointMode = true;
-      expect(component.enableWaypointMode).toBe(true);
-
-      component.enableWaypointMode = false;
-      expect(component.enableWaypointMode).toBe(false);
-    });
+    // Removed test for enableWaypointMode as this property doesn't exist in the component
 
     it('should handle multiWaypointRoute input changes', () => {
       component.multiWaypointRoute = mockMultiWaypointRoute;

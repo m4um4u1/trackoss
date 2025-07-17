@@ -21,7 +21,6 @@ export class MapPageComponent implements OnInit, OnDestroy {
   public currentStartPoint?: Coordinates;
   public currentEndPoint?: Coordinates;
   public currentWaypoints: RoutePoint[] = [];
-  public enableWaypointMode: boolean = false;
 
   // Responsive properties
   public isMobile: boolean = false;
@@ -166,21 +165,12 @@ export class MapPageComponent implements OnInit, OnDestroy {
     this.currentWaypoints = waypoints;
   }
 
-  public onWaypointModeToggled(enabled: boolean): void {
-    this.enableWaypointMode = enabled;
+  public onStartPointChanged(startPoint: Coordinates): void {
+    this.currentStartPoint = startPoint;
+  }
 
-    // Clear traditional route points when switching to waypoint mode
-    if (enabled) {
-      this.currentStartPoint = undefined;
-      this.currentEndPoint = undefined;
-      // Clear any existing normal routes
-      this.routeService.clearAllStoredRoutes();
-    } else {
-      // Clear waypoints when switching to traditional mode
-      this.currentWaypoints = [];
-      // Clear any existing waypoint routes
-      this.routeService.clearAllStoredRoutes();
-    }
+  public onEndPointChanged(endPoint: Coordinates): void {
+    this.currentEndPoint = endPoint;
   }
 
   public onRouteCalculated(routeResult: RouteResult): void {

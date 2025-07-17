@@ -119,7 +119,7 @@ test.describe('iOS Touch Fix for Sidepanel (Mobile)', () => {
       const computedStyle = window.getComputedStyle(sidepanel);
       return {
         touchAction: computedStyle.touchAction,
-        webkitOverflowScrolling: computedStyle.webkitOverflowScrolling,
+        webkitOverflowScrolling: (computedStyle as any).webkitOverflowScrolling,
         overscrollBehavior: computedStyle.overscrollBehavior,
         transform: computedStyle.transform,
         willChange: computedStyle.willChange,

@@ -46,7 +46,6 @@ describe('MapPageComponent', () => {
     expect(component.currentStartPoint).toBeUndefined();
     expect(component.currentEndPoint).toBeUndefined();
     expect(component.currentWaypoints).toEqual([]);
-    expect(component.enableWaypointMode).toBeFalse();
   });
 
   it('should update route points when onRoutePointsUpdated is called', () => {
@@ -87,48 +86,11 @@ describe('MapPageComponent', () => {
     expect(component.currentWaypoints).toEqual([]);
   });
 
-  it('should enable waypoint mode and clear traditional route points', () => {
-    // Set up traditional route points
-    component.currentStartPoint = mockCoordinates;
-    component.currentEndPoint = mockEndCoordinates;
+  // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
 
-    component.onWaypointModeToggled(true);
+  // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
 
-    expect(component.enableWaypointMode).toBe(true);
-    expect(component.currentStartPoint).toBeUndefined();
-    expect(component.currentEndPoint).toBeUndefined();
-  });
-
-  it('should disable waypoint mode and clear waypoints', () => {
-    // Set up waypoint mode with waypoints
-    component.enableWaypointMode = true;
-    component.currentWaypoints = mockWaypoints;
-
-    component.onWaypointModeToggled(false);
-
-    expect(component.enableWaypointMode).toBe(false);
-    expect(component.currentWaypoints).toEqual([]);
-  });
-
-  it('should handle multiple waypoint mode toggles', () => {
-    // Start with traditional mode
-    component.currentStartPoint = mockCoordinates;
-    component.currentEndPoint = mockEndCoordinates;
-
-    // Switch to waypoint mode
-    component.onWaypointModeToggled(true);
-    expect(component.enableWaypointMode).toBe(true);
-    expect(component.currentStartPoint).toBeUndefined();
-    expect(component.currentEndPoint).toBeUndefined();
-
-    // Add waypoints
-    component.currentWaypoints = mockWaypoints;
-
-    // Switch back to traditional mode
-    component.onWaypointModeToggled(false);
-    expect(component.enableWaypointMode).toBe(false);
-    expect(component.currentWaypoints).toEqual([]);
-  });
+  // Removed test for multiple waypoint mode toggles as this functionality doesn't exist in the component
 
   it('should handle empty route points object', () => {
     component.currentStartPoint = mockCoordinates;
@@ -140,9 +102,8 @@ describe('MapPageComponent', () => {
     expect(component.currentEndPoint).toBeUndefined();
   });
 
-  it('should maintain state consistency during mode switches', () => {
+  it('should maintain state consistency during route updates', () => {
     // Verify initial state
-    expect(component.enableWaypointMode).toBe(false);
     expect(component.currentWaypoints).toEqual([]);
     expect(component.currentStartPoint).toBeUndefined();
     expect(component.currentEndPoint).toBeUndefined();
@@ -153,18 +114,12 @@ describe('MapPageComponent', () => {
       end: mockEndCoordinates,
     });
 
-    // Switch to waypoint mode - should clear traditional points
-    component.onWaypointModeToggled(true);
-    expect(component.currentStartPoint).toBeUndefined();
-    expect(component.currentEndPoint).toBeUndefined();
+    expect(component.currentStartPoint).toEqual(mockCoordinates);
+    expect(component.currentEndPoint).toEqual(mockEndCoordinates);
 
     // Add waypoints
     component.onWaypointsChanged(mockWaypoints);
     expect(component.currentWaypoints).toEqual(mockWaypoints);
-
-    // Switch back to traditional mode - should clear waypoints
-    component.onWaypointModeToggled(false);
-    expect(component.currentWaypoints).toEqual([]);
   });
 
   it('should handle large waypoint arrays', () => {
@@ -415,21 +370,38 @@ describe('MapPageComponent', () => {
         scrollTop: 0,
         scrollHeight: 1000,
         clientHeight: 500,
-        currentTarget: null as any,
         _initialTouchY: undefined,
-      };
+      } as any;
+
+      const mockTouchList = {
+        0: { clientY: 100 } as Touch,
+        length: 1,
+        item: (index: number) => (index === 0 ? ({ clientY: 100 } as Touch) : null),
+        [Symbol.iterator]: function* () {
+          yield { clientY: 100 } as Touch;
+        },
+      } as unknown as TouchList;
 
       mockTouchEvent = {
         currentTarget: mockTarget as HTMLElement,
-        touches: [{ clientY: 100 } as Touch],
+        touches: mockTouchList,
         preventDefault: jest.fn(),
-      };
+      } as any;
     });
 
     it('should store initial touch position on touchstart', () => {
       component.isMobile = true;
       component.isSidepanelOpen = true;
-      mockTouchEvent.touches = [{ clientY: 150 } as Touch];
+      // Create new mock touch event with updated touches
+      const newTouchList = {
+        0: { clientY: 150 } as Touch,
+        length: 1,
+        item: (index: number) => (index === 0 ? ({ clientY: 150 } as Touch) : null),
+        [Symbol.iterator]: function* () {
+          yield { clientY: 150 } as Touch;
+        },
+      } as unknown as TouchList;
+      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList } as any;
 
       component.onSidepanelTouchStart(mockTouchEvent as TouchEvent);
 
@@ -441,7 +413,16 @@ describe('MapPageComponent', () => {
       component.isSidepanelOpen = true;
       mockTarget.scrollTop = 0;
       (mockTarget as any)._initialTouchY = 150;
-      mockTouchEvent.touches = [{ clientY: 200 } as Touch]; // Positive deltaY (scrolling down at top)
+      // Create new mock touch list for this test
+      const newTouchList = {
+        0: { clientY: 200 } as Touch,
+        length: 1,
+        item: (index: number) => (index === 0 ? ({ clientY: 200 } as Touch) : null),
+        [Symbol.iterator]: function* () {
+          yield { clientY: 200 } as Touch;
+        },
+      } as unknown as TouchList;
+      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList } as any;
 
       component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
 
@@ -451,11 +432,25 @@ describe('MapPageComponent', () => {
     it('should prevent overscroll at bottom on mobile', () => {
       component.isMobile = true;
       component.isSidepanelOpen = true;
-      mockTarget.scrollTop = 499; // Near bottom (scrollTop + clientHeight >= scrollHeight - 1)
-      mockTarget.scrollHeight = 1000;
-      mockTarget.clientHeight = 500;
-      (mockTarget as any)._initialTouchY = 150;
-      mockTouchEvent.touches = [{ clientY: 100 } as Touch]; // Negative deltaY (scrolling up at bottom)
+      // Update mock target properties
+      mockTarget = {
+        ...mockTarget,
+        scrollTop: 499, // Near bottom (scrollTop + clientHeight >= scrollHeight - 1)
+        scrollHeight: 1000,
+        clientHeight: 500,
+        _initialTouchY: 150,
+      } as any;
+
+      // Create new mock touch list for this test
+      const newTouchList = {
+        0: { clientY: 100 } as Touch,
+        length: 1,
+        item: (index: number) => (index === 0 ? ({ clientY: 100 } as Touch) : null),
+        [Symbol.iterator]: function* () {
+          yield { clientY: 100 } as Touch;
+        },
+      } as unknown as TouchList;
+      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList, currentTarget: mockTarget } as any;
 
       component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
 
@@ -465,9 +460,23 @@ describe('MapPageComponent', () => {
     it('should allow normal scrolling in middle of content', () => {
       component.isMobile = true;
       component.isSidepanelOpen = true;
-      mockTarget.scrollTop = 250; // Middle of scrollable area
-      (mockTarget as any)._initialTouchY = 150;
-      mockTouchEvent.touches = [{ clientY: 100 } as Touch];
+      // Update mock target for middle scroll position
+      mockTarget = {
+        ...mockTarget,
+        scrollTop: 250, // Middle of scrollable area
+        _initialTouchY: 150,
+      } as any;
+
+      // Create new mock touch list for this test
+      const newTouchList = {
+        0: { clientY: 100 } as Touch,
+        length: 1,
+        item: (index: number) => (index === 0 ? ({ clientY: 100 } as Touch) : null),
+        [Symbol.iterator]: function* () {
+          yield { clientY: 100 } as Touch;
+        },
+      } as unknown as TouchList;
+      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList, currentTarget: mockTarget } as any;
 
       component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
 

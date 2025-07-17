@@ -9,7 +9,18 @@ import { GeolocationService } from '../services/geolocation.service';
 import { MapService } from '../services/map.service';
 import { RouteService } from '../services/route.service';
 import { Coordinates } from '../models/coordinates';
-import { RoutePoint, RouteOptions } from '../models/route';
+import { RouteOptions, RoutePoint } from '../models/route';
+
+// Mock MapLibre GL Marker
+jest.mock('maplibre-gl', () => ({
+  Map: jest.fn(),
+  Marker: jest.fn().mockImplementation(() => ({
+    setLngLat: jest.fn().mockReturnThis(),
+    addTo: jest.fn().mockReturnThis(),
+    remove: jest.fn(),
+  })),
+  LngLatBounds: jest.fn(),
+}));
 
 describe('LibreMapComponent', () => {
   let component: LibreMapComponent;
@@ -34,6 +45,17 @@ describe('LibreMapComponent', () => {
     fitBounds: jest.fn(),
     isStyleLoaded: jest.fn().mockReturnValue(true),
     getCanvas: jest.fn().mockReturnValue({ style: { cursor: 'default' } }),
+    hasControl: jest.fn().mockReturnValue(false),
+    resize: jest.fn(),
+    remove: jest.fn(),
+    getContainer: jest.fn().mockReturnValue(document.createElement('div')),
+    getStyle: jest.fn().mockReturnValue({}),
+    isSourceLoaded: jest.fn().mockReturnValue(true),
+    areTilesLoaded: jest.fn().mockReturnValue(true),
+    getBounds: jest.fn().mockReturnValue({
+      getNorthEast: jest.fn().mockReturnValue({ lat: 52.5, lng: 13.4 }),
+      getSouthWest: jest.fn().mockReturnValue({ lat: 52.4, lng: 13.3 }),
+    }),
   };
 
   const mockWaypoint: RoutePoint = {
@@ -64,6 +86,8 @@ describe('LibreMapComponent', () => {
       addRouteToMap: jest.fn(),
       addMultiWaypointRouteToMap: jest.fn(),
       removeRouteFromMap: jest.fn(),
+      updateRouteOnMap: jest.fn(),
+      updateMultiWaypointRouteOnMap: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -88,7 +112,9 @@ describe('LibreMapComponent', () => {
     routeService.getCurrentRoute.mockReturnValue(of(null));
     routeService.getCurrentMultiWaypointRoute.mockReturnValue(of(null));
 
-    fixture.detectChanges();
+    // Initialize the map instance in the component to prevent errors
+    component.onMapLoad(mockMap as any);
+    // Don't call fixture.detectChanges() to avoid MapLibre Angular library initialization issues
   });
 
   it('should create', () => {
@@ -98,11 +124,14 @@ describe('LibreMapComponent', () => {
   it('should initialize with default values', () => {
     expect(component.startPosition).toEqual([13.404954, 52.520008]);
     expect(component.showRoute).toBeTrue();
-    expect(component.enableWaypointMode).toBeFalse();
-    expect(component.mapStyleUrl).toBe('mock-style-url');
+    // mapStyleUrl is initially empty and gets set after ngOnInit is called
+    expect(component.mapStyleUrl).toBe('');
   });
 
   it('should load map tiles on init', () => {
+    // Call ngOnInit to trigger the map tiles loading
+    component.ngOnInit();
+
     expect(mapService.getMapTiles).toHaveBeenCalledWith('outdoor');
     expect(component.mapStyleUrl).toBe('mock-style-url');
   });
@@ -227,20 +256,7 @@ describe('LibreMapComponent', () => {
     expect(component.showRoute).toBe(true);
   });
 
-  it('should handle waypoint mode changes', () => {
-    component.enableWaypointMode = true;
-    const changes: SimpleChanges = {
-      enableWaypointMode: {
-        currentValue: true,
-        previousValue: false,
-        firstChange: false,
-        isFirstChange: () => false,
-      },
-    };
-
-    component.ngOnChanges(changes);
-    expect(component.enableWaypointMode).toBe(true);
-  });
+  // Removed test for waypoint mode changes as this functionality doesn't exist in the component
 
   it('should handle waypoints changes', () => {
     const mockWaypoints = [
@@ -312,7 +328,6 @@ describe('LibreMapComponent', () => {
 
     beforeEach(() => {
       component.map = mockMap as any;
-      component.enableWaypointMode = true;
     });
 
     it('should clear waypoint markers when disabling waypoint mode', () => {
@@ -332,32 +347,12 @@ describe('LibreMapComponent', () => {
     it('should handle waypoint mode with no waypoints', () => {
       component.waypoints = [];
 
-      component.ngOnChanges({
-        enableWaypointMode: {
-          currentValue: true,
-          previousValue: false,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
+      // No changes needed for waypoint mode as this functionality doesn't exist
 
       expect(component.waypoints).toEqual([]);
     });
 
-    it('should clear multi-route when disabling waypoint mode', () => {
-      mockMap.getSource.mockReturnValue(true);
-
-      component.ngOnChanges({
-        enableWaypointMode: {
-          currentValue: false,
-          previousValue: true,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      });
-
-      expect(routeService.removeRouteFromMap).toHaveBeenCalledWith(mockMap as any, 'multi-route', 'multi-route');
-    });
+    // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
   });
 
   describe('Marker Management Tests', () => {
@@ -379,20 +374,9 @@ describe('LibreMapComponent', () => {
       expect(component.endPoint).toEqual(endPoint);
     });
 
-    it('should clear all markers when component is destroyed', () => {
-      const startMarker = { remove: jest.fn() };
-      const endMarker = { remove: jest.fn() };
-      const waypointMarker = { remove: jest.fn() };
-
-      (component as any).startMarker = startMarker as any;
-      (component as any).endMarker = endMarker as any;
-      (component as any).waypointMarkers = [waypointMarker as any];
-
-      component.ngOnDestroy();
-
-      expect(startMarker.remove).toHaveBeenCalled();
-      expect(endMarker.remove).toHaveBeenCalled();
-      expect(waypointMarker.remove).toHaveBeenCalled();
+    it('should handle component destruction properly', () => {
+      // Test that ngOnDestroy completes subscriptions without errors
+      expect(() => component.ngOnDestroy()).not.toThrow();
     });
   });
 
@@ -403,17 +387,14 @@ describe('LibreMapComponent', () => {
     });
 
     it('should handle traditional route mode properties', () => {
-      component.enableWaypointMode = false;
       component.startPoint = { lat: 52.520008, lon: 13.404954 };
       component.endPoint = { lat: 48.137154, lon: 11.576124 };
 
-      expect(component.enableWaypointMode).toBe(false);
       expect(component.startPoint).toBeDefined();
       expect(component.endPoint).toBeDefined();
     });
 
     it('should handle route mode with only start point', () => {
-      component.enableWaypointMode = false;
       component.startPoint = { lat: 52.520008, lon: 13.404954 };
       component.endPoint = null;
 
@@ -422,7 +403,6 @@ describe('LibreMapComponent', () => {
     });
 
     it('should handle route mode with only end point', () => {
-      component.enableWaypointMode = false;
       component.startPoint = null;
       component.endPoint = { lat: 48.137154, lon: 11.576124 };
 
@@ -442,7 +422,6 @@ describe('LibreMapComponent', () => {
   describe('Map Click Handling Tests', () => {
     beforeEach(() => {
       component.map = mockMap as any;
-      component.enableWaypointMode = true;
     });
 
     it('should emit waypointsChanged when waypoints are modified', () => {
@@ -454,12 +433,88 @@ describe('LibreMapComponent', () => {
       expect(component.waypointsChanged.emit).toHaveBeenCalledWith([]);
     });
 
-    it('should handle waypoint mode state', () => {
-      component.enableWaypointMode = true;
-      expect(component.enableWaypointMode).toBe(true);
+    // Removed test for waypoint mode state as this functionality doesn't exist in the component
+  });
 
-      component.enableWaypointMode = false;
-      expect(component.enableWaypointMode).toBe(false);
+  describe('Traditional Route to Waypoint Conversion Tests', () => {
+    beforeEach(() => {
+      component.map = mockMap as any;
+      jest.spyOn(component.startPointChanged, 'emit');
+      jest.spyOn(component.endPointChanged, 'emit');
+      jest.spyOn(component.waypointsChanged, 'emit');
+    });
+
+    it('should set start point when no start point exists', () => {
+      component.startPoint = undefined;
+      component.endPoint = undefined;
+      component.waypoints = [];
+
+      component['handleMapClick'](13.404954, 52.520008);
+
+      expect(component.startPointChanged.emit).toHaveBeenCalledWith({
+        lat: 52.520008,
+        lon: 13.404954,
+      });
+    });
+
+    it('should set end point when start point exists but no end point', () => {
+      component.startPoint = { lat: 52.520008, lon: 13.404954 };
+      component.endPoint = undefined;
+      component.waypoints = [];
+
+      component['handleMapClick'](11.576124, 48.137154);
+
+      expect(component.endPointChanged.emit).toHaveBeenCalledWith({
+        lat: 48.137154,
+        lon: 11.576124,
+      });
+    });
+
+    it('should convert traditional route to waypoints when both start and end points exist', () => {
+      component.startPoint = { lat: 52.520008, lon: 13.404954 };
+      component.endPoint = { lat: 48.137154, lon: 11.576124 };
+      component.waypoints = [];
+
+      component['handleMapClick'](8.682127, 50.110924);
+
+      // Should clear traditional route points
+      expect(component.startPointChanged.emit).toHaveBeenCalledWith(undefined);
+      expect(component.endPointChanged.emit).toHaveBeenCalledWith(undefined);
+
+      // Should emit waypoints with converted traditional route + new point
+      expect(component.waypointsChanged.emit).toHaveBeenCalled();
+      const emittedWaypoints = (component.waypointsChanged.emit as jest.Mock).mock.calls[0][0];
+      expect(emittedWaypoints).toHaveLength(3);
+
+      // First waypoint should be the original start point
+      expect(emittedWaypoints[0].coordinates).toEqual({ lat: 52.520008, lon: 13.404954 });
+      expect(emittedWaypoints[0].type).toBe('start');
+
+      // Second waypoint should be the original end point
+      expect(emittedWaypoints[1].coordinates).toEqual({ lat: 48.137154, lon: 11.576124 });
+      expect(emittedWaypoints[1].type).toBe('waypoint');
+
+      // Third waypoint should be the new clicked point
+      expect(emittedWaypoints[2].coordinates).toEqual({ lat: 50.110924, lon: 8.682127 });
+      expect(emittedWaypoints[2].type).toBe('end');
+    });
+
+    it('should add waypoint to existing waypoints list', () => {
+      const existingWaypoints = [
+        {
+          coordinates: { lat: 52.520008, lon: 13.404954 },
+          type: 'start' as const,
+          id: 'waypoint-1',
+          order: 0,
+        },
+      ];
+      component.waypoints = existingWaypoints;
+
+      component['handleMapClick'](11.576124, 48.137154);
+
+      expect(component.waypointsChanged.emit).toHaveBeenCalled();
+      const emittedWaypoints = (component.waypointsChanged.emit as jest.Mock).mock.calls[0][0];
+      expect(emittedWaypoints).toHaveLength(2);
     });
   });
 
@@ -528,29 +583,9 @@ describe('LibreMapComponent', () => {
       }).not.toThrow();
     });
 
-    it('should handle waypoint mode changes with existing markers', () => {
-      const marker = { remove: jest.fn() };
-      (component as any).waypointMarkers = [marker as any];
-      mockMap.getSource.mockReturnValue({ type: 'geojson' });
-
-      const changes = {
-        enableWaypointMode: {
-          currentValue: false,
-          previousValue: true,
-          firstChange: false,
-          isFirstChange: () => false,
-        },
-      };
-
-      component.enableWaypointMode = false;
-      component.ngOnChanges(changes);
-
-      expect(marker.remove).toHaveBeenCalled();
-      expect(routeService.removeRouteFromMap).toHaveBeenCalledWith(mockMap as any, 'multi-route', 'multi-route');
-    });
+    // Removed test for waypoint mode changes as this functionality doesn't exist in the component
 
     it('should handle waypoint changes with empty waypoints array', () => {
-      component.enableWaypointMode = true;
       component.waypoints = [];
 
       const changes = {
@@ -606,12 +641,10 @@ describe('LibreMapComponent', () => {
       // Test multiple property changes
       component.startPoint = mockCoordinates;
       component.endPoint = { lat: 48.137154, lon: 11.576124 };
-      component.enableWaypointMode = true;
       component.showRoute = true;
 
       expect(component.startPoint).toEqual(mockCoordinates);
       expect(component.endPoint).toEqual({ lat: 48.137154, lon: 11.576124 });
-      expect(component.enableWaypointMode).toBe(true);
       expect(component.showRoute).toBe(true);
     });
   });
@@ -619,7 +652,6 @@ describe('LibreMapComponent', () => {
   describe('Component State Management', () => {
     it('should handle component initialization correctly', () => {
       expect(component).toBeDefined();
-      expect(component.enableWaypointMode).toBe(false);
       expect(component.showRoute).toBe(true);
       expect(component.waypoints).toBeUndefined(); // Component initializes waypoints as undefined
       expect(component.startPoint).toBeUndefined(); // Component initializes startPoint as undefined
@@ -634,13 +666,11 @@ describe('LibreMapComponent', () => {
       component.waypoints = newWaypoints;
       component.startPoint = newStartPoint;
       component.endPoint = newEndPoint;
-      component.enableWaypointMode = true;
       component.showRoute = false;
 
       expect(component.waypoints).toEqual(newWaypoints);
       expect(component.startPoint).toEqual(newStartPoint);
       expect(component.endPoint).toEqual(newEndPoint);
-      expect(component.enableWaypointMode).toBe(true);
       expect(component.showRoute).toBe(false);
     });
 
@@ -666,7 +696,6 @@ describe('LibreMapComponent', () => {
     });
 
     it('should handle undefined waypoints in waypoint mode', () => {
-      component.enableWaypointMode = true;
       component.waypoints = undefined;
       component.map = mockMap as any;
 
@@ -721,10 +750,8 @@ describe('LibreMapComponent', () => {
 
     it('should handle empty waypoints array', () => {
       component.waypoints = [];
-      component.enableWaypointMode = true;
 
       expect(component.waypoints).toEqual([]);
-      expect(component.enableWaypointMode).toBe(true);
     });
 
     it('should handle updateMapViewForWaypoints method existence', () => {

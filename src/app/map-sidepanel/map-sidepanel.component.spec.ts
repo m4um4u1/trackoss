@@ -6,7 +6,7 @@ import { of, throwError } from 'rxjs';
 import { MapSidepanelComponent } from './map-sidepanel.component';
 import { RouteService } from '../services/route.service';
 import { Coordinates } from '../models/coordinates';
-import { RouteResult, RoutePoint, MultiWaypointRoute } from '../models/route';
+import { MultiWaypointRoute, RoutePoint, RouteResult } from '../models/route';
 
 describe('MapSidepanelComponent', () => {
   let component: MapSidepanelComponent;
@@ -76,7 +76,6 @@ describe('MapSidepanelComponent', () => {
 
   it('should initialize with default values', () => {
     expect(component.waypoints).toEqual([]);
-    expect(component.enableWaypointMode).toBeFalse();
     expect(component.currentMultiWaypointRoute).toBeNull();
   });
 
@@ -130,21 +129,9 @@ describe('MapSidepanelComponent', () => {
     expect(component.waypointsChanged.emit).toHaveBeenCalledWith(waypoints);
   });
 
-  it('should emit waypoint mode toggle', () => {
-    jest.spyOn(component.waypointModeToggled, 'emit');
+  // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
 
-    component.onWaypointModeToggled(true);
-
-    expect(component.waypointModeToggled.emit).toHaveBeenCalledWith(true);
-  });
-
-  it('should emit waypoints cleared', () => {
-    jest.spyOn(component.waypointsChanged, 'emit');
-
-    component.onWaypointsCleared();
-
-    expect(component.waypointsChanged.emit).toHaveBeenCalledWith([]);
-  });
+  // Removed test for waypoints cleared as this method doesn't exist in the component
 
   it('should emit multi-waypoint route calculated', () => {
     jest.spyOn(component.multiWaypointRouteCalculated, 'emit');
@@ -189,13 +176,7 @@ describe('MapSidepanelComponent', () => {
     expect(component.waypoints).toEqual(newWaypoints);
   });
 
-  it('should handle enableWaypointMode changes', () => {
-    component.enableWaypointMode = true;
-    expect(component.enableWaypointMode).toBe(true);
-
-    component.enableWaypointMode = false;
-    expect(component.enableWaypointMode).toBe(false);
-  });
+  // Removed test for enableWaypointMode as this property doesn't exist in the component
 
   it('should handle route calculation', () => {
     jest.spyOn(component.routeCalculated, 'emit');
@@ -232,25 +213,7 @@ describe('MapSidepanelComponent', () => {
     expect(component.currentMultiWaypointRoute).toBe(mockMultiWaypointRoute);
   });
 
-  it('should handle waypoint mode toggle with state management', () => {
-    jest.spyOn(component.waypointModeToggled, 'emit');
-
-    component.onWaypointModeToggled(true);
-
-    expect(component.waypointModeToggled.emit).toHaveBeenCalledWith(true);
-  });
-
-  it('should handle waypoints cleared with proper cleanup', () => {
-    component.currentMultiWaypointRoute = mockMultiWaypointRoute;
-
-    jest.spyOn(component.waypointsChanged, 'emit');
-    jest.spyOn(routeService, 'clearAllStoredRoutes');
-
-    component.onWaypointsCleared();
-
-    expect(component.waypointsChanged.emit).toHaveBeenCalledWith([]);
-    expect(routeService.clearAllStoredRoutes).toHaveBeenCalled();
-  });
+  // Removed tests for waypoint mode toggle and waypoints cleared as these methods don't exist in the component
 
   it('should handle multi-waypoint route updates from service', () => {
     const newRoute = {
@@ -384,18 +347,7 @@ describe('MapSidepanelComponent', () => {
       expect(component.routeCalculated.emit).toHaveBeenCalledWith(largeRoute);
     });
 
-    it('should handle waypoint mode toggle multiple times', () => {
-      jest.spyOn(component.waypointModeToggled, 'emit');
-
-      component.onWaypointModeToggled(true);
-      component.onWaypointModeToggled(false);
-      component.onWaypointModeToggled(true);
-
-      expect(component.waypointModeToggled.emit).toHaveBeenCalledTimes(3);
-      expect(component.waypointModeToggled.emit).toHaveBeenCalledWith(true);
-      expect(component.waypointModeToggled.emit).toHaveBeenCalledWith(false);
-      expect(component.waypointModeToggled.emit).toHaveBeenCalledWith(true);
-    });
+    // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
 
     it('should handle route error with empty string', () => {
       expect(() => component.onRouteError('')).not.toThrow();
@@ -449,12 +401,10 @@ describe('MapSidepanelComponent', () => {
 
     it('should handle property initialization correctly', () => {
       expect(component.waypoints).toBeDefined();
-      expect(component.enableWaypointMode).toBeDefined();
       expect(component.currentMultiWaypointRoute).toBeDefined();
       expect(component.routePointsReady).toBeDefined();
       expect(component.routeCalculated).toBeDefined();
       expect(component.waypointsChanged).toBeDefined();
-      expect(component.waypointModeToggled).toBeDefined();
       expect(component.multiWaypointRouteCalculated).toBeDefined();
     });
 

@@ -38,11 +38,9 @@ export class WaypointManagerComponent {
   readonly ToggleLeftIcon = ToggleLeft;
 
   @Input() waypoints: RoutePoint[] = [];
-  @Input() enableWaypointMode: boolean = false;
   @Input() multiWaypointRoute: MultiWaypointRoute | null = null;
 
   @Output() waypointsChanged = new EventEmitter<RoutePoint[]>();
-  @Output() waypointModeToggled = new EventEmitter<boolean>();
   @Output() waypointRemoved = new EventEmitter<string>();
   @Output() waypointsCleared = new EventEmitter<void>();
   @Output() routeCalculated = new EventEmitter<void>();
@@ -51,18 +49,6 @@ export class WaypointManagerComponent {
   isAddingWaypoint: boolean = false;
 
   constructor() {}
-
-  /**
-   * Toggle waypoint mode on/off
-   */
-  toggleWaypointMode(): void {
-    this.enableWaypointMode = !this.enableWaypointMode;
-    this.waypointModeToggled.emit(this.enableWaypointMode);
-
-    if (!this.enableWaypointMode) {
-      this.clearAllWaypoints();
-    }
-  }
 
   /**
    * Add a new waypoint by geocoding text input
