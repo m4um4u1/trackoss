@@ -14,8 +14,6 @@ import { RouteOptions, RouteResult } from '../../models/route';
   imports: [FormsModule],
   templateUrl: './route-calculator.component.html',
   styleUrls: ['./route-calculator.component.scss'],
-  // Temporarily disable OnPush for testing
-  // changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteCalculatorComponent implements OnInit, OnDestroy {
   // Input properties converted to signals for reactivity

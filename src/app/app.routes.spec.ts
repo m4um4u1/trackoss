@@ -1,37 +1,10 @@
-import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { Location } from '@angular/common';
-import { Component } from '@angular/core';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
-
 import { routes } from './app.routes';
 import { MapPageComponent } from './pages/map-page/map-page.component';
 
-@Component({
-  template: '<router-outlet></router-outlet>',
-  standalone: true,
-  imports: [],
-})
-class TestHostComponent {}
-
 describe('AppRoutes', () => {
-  let router: Router;
-  let location: Location;
-  let fixture: any;
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: 'routes', useValue: routes }],
-    }).compileComponents();
-
-    router = TestBed.inject(Router);
-    location = TestBed.inject(Location);
-  });
-
   it('should have correct route configuration', () => {
     expect(routes).toBeDefined();
-    expect(routes.length).toBe(2);
+    expect(routes.length).toBe(3);
   });
 
   it('should have default redirect route', () => {

@@ -1,0 +1,219 @@
+.routes-page {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .page-header {
+    h1 {
+      color: var(--bs-dark);
+      font-weight: 600;
+
+      i {
+        color: var(--bs-primary);
+      }
+    }
+
+    .btn-outline-primary {
+      border-color: var(--bs-primary);
+      color: var(--bs-primary);
+
+      &:hover:not(:disabled) {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+    }
+  }
+
+  .results-summary {
+    font-size: 0.9rem;
+
+    .pagination-sm {
+      .page-link {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  // Loading state
+  .loading-state {
+    .placeholder {
+      background-color: var(--bs-gray-300);
+      opacity: 0.7;
+    }
+
+    .card {
+      border: 1px solid var(--bs-border-color);
+    }
+  }
+
+  // Error state
+  .error-state {
+    .alert-danger {
+      border-color: var(--bs-danger);
+      background-color: rgba(var(--bs-danger-rgb), 0.1);
+
+      .btn-outline-danger {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.75rem;
+      }
+    }
+  }
+
+  // Empty state
+  .empty-state {
+    background-color: var(--bs-light);
+    border-radius: var(--bs-border-radius-lg);
+    margin: 2rem 0;
+
+    .display-1 {
+      font-size: 4rem;
+      opacity: 0.5;
+    }
+
+    .btn-link {
+      color: var(--bs-primary);
+      text-decoration: underline;
+
+      &:hover {
+        color: var(--bs-primary);
+        text-decoration: none;
+      }
+    }
+
+    .btn-primary {
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
+    }
+  }
+
+  // Routes grid
+  .routes-grid {
+    .row {
+      margin: 0 -0.75rem;
+
+      > .col-lg-4,
+      > .col-md-6 {
+        padding: 0 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+    }
+  }
+
+  // Pagination
+  .pagination {
+    .page-link {
+      color: var(--bs-primary);
+      border-color: var(--bs-border-color);
+
+      &:hover {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+      }
+
+      &:focus {
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+      }
+    }
+
+    .page-item.active .page-link {
+      background-color: var(--bs-primary);
+      border-color: var(--bs-primary);
+    }
+
+    .page-item.disabled .page-link {
+      color: var(--bs-secondary);
+      background-color: var(--bs-light);
+      border-color: var(--bs-border-color);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 991.98px) {
+  .routes-page {
+    padding: 1rem;
+
+    .page-header {
+      .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+      }
+
+      .btn-outline-primary {
+        align-self: flex-end;
+      }
+    }
+  }
+}
+
+@media (max-width: 767.98px) {
+  .routes-page {
+    padding: 0.75rem;
+
+    .results-summary {
+      .d-flex {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start !important;
+      }
+
+      .pagination {
+        align-self: center;
+      }
+    }
+
+    .routes-grid {
+      .row > .col-md-6 {
+        margin-bottom: 1rem;
+      }
+    }
+  }
+}
+
+@media (max-width: 575.98px) {
+  .routes-page {
+    .page-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .pagination {
+      font-size: 0.875rem;
+
+      .page-link {
+        padding: 0.375rem 0.75rem;
+      }
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Focus management for accessibility
+.routes-page {
+  .btn:focus,
+  .page-link:focus {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: 2px;
+  }
+}

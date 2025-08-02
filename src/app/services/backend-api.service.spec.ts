@@ -41,8 +41,8 @@ describe('BackendApiService', () => {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Test Route',
     description: 'A test cycling route',
-    createdAt: '2024-01-01T10:00:00Z',
-    updatedAt: '2024-01-01T10:00:00Z',
+    createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
+    updatedAt: [2025, 8, 3, 3, 14, 3, 610235000],
     userId: 'user123',
     totalDistance: 5000,
     totalElevationGain: 100,
@@ -71,11 +71,14 @@ describe('BackendApiService', () => {
     pointCount: 2,
   };
 
+  // Helper function to get the backend base URL for tests
+  const getBackendBaseUrl = () => 'http://test-config.com';
+
   beforeEach(() => {
     const configServiceSpy = {
       loadConfig: jest.fn().mockReturnValue(
         of({
-          mapTileProxyBaseUrl: 'http://test-config.com/api/map-proxy',
+          baseUrl: 'http://test-config.com',
           valhallaUrl: 'http://test-config.com/valhalla',
         }),
       ),
@@ -92,6 +95,9 @@ describe('BackendApiService', () => {
     service = TestBed.inject(BackendApiService);
     httpMock = TestBed.inject(HttpTestingController);
     configService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
+
+    // Mock the environment for testing
+    (environment as any).baseUrl = 'http://localhost:8080';
   });
 
   afterEach(() => {
@@ -102,13 +108,36 @@ describe('BackendApiService', () => {
     expect(service).toBeTruthy();
   });
 
+  describe('getMapProxyUrl', () => {
+    it('should return /api/map-proxy in development mode', () => {
+      // Mock development environment
+      (environment as any).production = false;
+      (environment as any).useConfigService = false;
+
+      service.getMapProxyUrl().subscribe((url) => {
+        expect(url).toBe('/api/map-proxy');
+      });
+    });
+
+    it('should use ConfigService in production mode', () => {
+      // Mock production environment
+      (environment as any).production = true;
+      (environment as any).useConfigService = true;
+
+      service.getMapProxyUrl().subscribe((url) => {
+        expect(url).toBe(getBackendBaseUrl());
+        expect(configService.loadConfig).toHaveBeenCalled();
+      });
+    });
+  });
+
   describe('createRoute', () => {
     it('should create a route successfully', () => {
       service.createRoute(mockRouteCreateRequest).subscribe((response) => {
         expect(response).toEqual(mockRouteResponse);
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes`);
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes`);
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(mockRouteCreateRequest);
       req.flush(mockRouteResponse);
@@ -126,11 +155,10 @@ describe('BackendApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes`);
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes`);
       req.error(new ErrorEvent('Network error'), {
         status: 400,
         statusText: 'Bad Request',
-        error: { message: errorMessage },
       });
     });
   });
@@ -143,9 +171,7 @@ describe('BackendApiService', () => {
         expect(response).toEqual(mockRouteResponse);
       });
 
-      const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/${routeId}`,
-      );
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes/${routeId}`);
       expect(req.request.method).toBe('GET');
       req.flush(mockRouteResponse);
     });
@@ -162,13 +188,10 @@ describe('BackendApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/${routeId}`,
-      );
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes/${routeId}`);
       req.error(new ErrorEvent('Network error'), {
         status: 404,
         statusText: 'Not Found',
-        error: { message: 'Route not found' },
       });
     });
   });
@@ -182,9 +205,7 @@ describe('BackendApiService', () => {
         expect(response).toEqual(updatedResponse);
       });
 
-      const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/${routeId}`,
-      );
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes/${routeId}`);
       expect(req.request.method).toBe('PUT');
       expect(req.request.body).toEqual(mockRouteCreateRequest);
       req.flush(updatedResponse);
@@ -199,9 +220,7 @@ describe('BackendApiService', () => {
         expect(response).toBeUndefined();
       });
 
-      const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/${routeId}`,
-      );
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes/${routeId}`);
       expect(req.request.method).toBe('DELETE');
       req.flush(null);
     });
@@ -261,9 +280,7 @@ describe('BackendApiService', () => {
         expect(response).toEqual(mockPageResponse);
       });
 
-      const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/public?page=0&size=20`,
-      );
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes/public?page=0&size=20`);
       expect(req.request.method).toBe('GET');
       req.flush(mockPageResponse);
     });
@@ -316,9 +333,7 @@ describe('BackendApiService', () => {
         expect(response).toEqual(mockBlob);
       });
 
-      const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/${routeId}/export/gpx`,
-      );
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes/${routeId}/export/gpx`);
       expect(req.request.method).toBe('GET');
       req.flush(mockBlob);
     });
@@ -327,15 +342,12 @@ describe('BackendApiService', () => {
   describe('exportRouteAsGeoJson', () => {
     it('should export route as GeoJSON', () => {
       const routeId = '123e4567-e89b-12d3-a456-426614174000';
-      const mockGeoJson = { type: 'FeatureCollection', features: [] };
-
+      const mockGeoJson = { type: 'FeatureCollection', features: [] as any[] };
       service.exportRouteAsGeoJson(routeId).subscribe((response) => {
         expect(response).toEqual(mockGeoJson);
       });
 
-      const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/${routeId}/export/geojson`,
-      );
+      const req = httpMock.expectOne(`${getBackendBaseUrl()}/api/routes/${routeId}/export/geojson`);
       expect(req.request.method).toBe('GET');
       req.flush(mockGeoJson);
     });
@@ -351,7 +363,7 @@ describe('BackendApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        `${environment.mapTileProxyBaseUrl.replace('/api/map-proxy', '')}/api/routes/import/geojson/raw?routeName=${encodeURIComponent(routeName)}`,
+        `${getBackendBaseUrl()}/api/routes/import/geojson/raw?routeName=${encodeURIComponent(routeName)}`,
       );
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toBe(geoJsonData);

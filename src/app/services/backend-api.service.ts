@@ -16,7 +16,6 @@ import {
   providedIn: 'root',
 })
 export class BackendApiService {
-  // Modern Angular 20 dependency injection
   private readonly http = inject(HttpClient);
   private readonly configService = inject(ConfigService);
 
@@ -138,6 +137,35 @@ export class BackendApiService {
   }
 
   /**
+   * Get routes with optional filtering and pagination
+   */
+  getRoutes(params: any = {}): Observable<PageResponse<RouteResponse>> {
+    return this.getBackendBaseUrl().pipe(
+      switchMap((baseUrl) => {
+        const url = `${baseUrl}/api/routes`;
+        let httpParams = new HttpParams()
+          .set('page', params.page?.toString() || '0')
+          .set('size', params.size?.toString() || '20');
+
+        // Add filter parameters if provided
+        if (params.search) httpParams = httpParams.set('search', params.search);
+        if (params.routeType) httpParams = httpParams.set('routeType', params.routeType);
+        if (params.difficulty) httpParams = httpParams.set('difficulty', params.difficulty);
+        if (params.minDistance) httpParams = httpParams.set('minDistance', params.minDistance);
+        if (params.maxDistance) httpParams = httpParams.set('maxDistance', params.maxDistance);
+        if (params.surfaceType) httpParams = httpParams.set('surfaceType', params.surfaceType);
+
+        if (params.sort) httpParams = httpParams.set('sort', params.sort);
+
+        return this.http.get<PageResponse<RouteResponse>>(url, { params: httpParams });
+      }),
+      catchError((error) => {
+        console.error('Error getting routes:', error);
+        throw this.handleApiError(error);
+      }),
+    );
+  }
+  /**
    * Find routes near a location
    */
   findNearbyRoutes(nearbyRequest: NearbyRoutesRequest): Observable<PageResponse<RouteResponse>> {
@@ -227,7 +255,21 @@ export class BackendApiService {
     if (environment.production && environment.useConfigService) {
       return this.configService.loadConfig().pipe(map((config) => config.valhallaUrl.replace('/valhalla', '')));
     } else {
-      return of(environment.mapTileProxyBaseUrl.replace('/api/map-proxy', ''));
+      // In development, use the environment baseUrl directly
+      return of(environment.baseUrl);
+    }
+  }
+
+  /**
+   * Get the map proxy URL for map tile requests
+   * This centralizes the /api/map-proxy path in the service
+   */
+  getMapProxyUrl(): Observable<string> {
+    if (environment.production && environment.useConfigService) {
+      return this.configService.loadConfig().pipe(map((config) => config.baseUrl));
+    } else {
+      // In development, use the environment baseUrl which includes
+      return of(environment.baseUrl + '/api/map-proxy');
     }
   }
 

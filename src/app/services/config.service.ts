@@ -4,7 +4,7 @@ import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
 export interface AppConfig {
-  mapTileProxyBaseUrl: string;
+  baseUrl: string;
   valhallaUrl: string;
 }
 
@@ -30,7 +30,7 @@ export class ConfigService {
         console.error('Failed to load configuration, using defaults:', error);
         // Fallback to environment values if config.json fails to load
         this.config = {
-          mapTileProxyBaseUrl: '/api/map-proxy',
+          baseUrl: '',
           valhallaUrl: '/api/valhalla',
         };
         return of(this.config);

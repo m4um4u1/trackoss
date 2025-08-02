@@ -28,7 +28,7 @@ describe('RouteDisplayComponent', () => {
         },
       ],
     },
-    distance: 1.5,
+    distance: 1500,
     duration: 450,
   };
 
@@ -47,7 +47,7 @@ describe('RouteDisplayComponent', () => {
         name: 'Munich',
       },
     ],
-    totalDistance: 5.75,
+    totalDistance: 5750,
     totalDuration: 7320,
     routes: [] as any[],
     routeData: {
@@ -101,9 +101,9 @@ describe('RouteDisplayComponent', () => {
   });
 
   it('should format distance correctly', () => {
-    expect(component.formatDistance(0.5)).toBe('500 m');
-    expect(component.formatDistance(1.5)).toBe('1 km 500 m');
-    expect(component.formatDistance(0.1)).toBe('100 m');
+    expect(component.formatDistance(500)).toBe('500 m');
+    expect(component.formatDistance(1500)).toBe('1 km 500 m');
+    expect(component.formatDistance(100)).toBe('100 m');
   });
 
   it('should format duration correctly', () => {
@@ -194,18 +194,18 @@ describe('RouteDisplayComponent', () => {
     } as any;
     fixture.detectChanges();
 
-    expect(component.formatDistance(component.routeResult.distance)).toBe('NaN m');
+    expect(component.formatDistance(component.routeResult.distance)).toBe('N/A');
     expect(component.formatDuration(component.routeResult.duration)).toBe('NaNm');
   });
 
   it('should format very small distances', () => {
-    expect(component.formatDistance(0.001)).toBe('1 m');
+    expect(component.formatDistance(1)).toBe('1 m');
     expect(component.formatDistance(0)).toBe('0 m');
   });
 
   it('should format very large distances', () => {
-    expect(component.formatDistance(100.5)).toBe('100 km 500 m');
-    expect(component.formatDistance(1000)).toBe('1000 km 0 m');
+    expect(component.formatDistance(100500)).toBe('100 km 500 m');
+    expect(component.formatDistance(1000000)).toBe('1000 km');
   });
 
   it('should format very short durations', () => {
@@ -219,7 +219,7 @@ describe('RouteDisplayComponent', () => {
   });
 
   it('should handle negative values gracefully', () => {
-    expect(component.formatDistance(-1)).toBe('0 m');
+    expect(component.formatDistance(-1)).toBe('-1 m');
     expect(component.formatDuration(-60)).toBe('-1m');
   });
 
@@ -279,17 +279,17 @@ describe('RouteDisplayComponent', () => {
   // Additional comprehensive tests for better coverage
   describe('Formatting Methods', () => {
     it('should format distance with kilometers and meters', () => {
-      const result = component.formatDistance(5.75);
+      const result = component.formatDistance(5750);
       expect(result).toBe('5 km 750 m');
     });
 
     it('should format distance with only meters when less than 1 km', () => {
-      const result = component.formatDistance(0.5);
+      const result = component.formatDistance(500);
       expect(result).toBe('500 m');
     });
 
     it('should format distance with zero kilometers', () => {
-      const result = component.formatDistance(0.25);
+      const result = component.formatDistance(250);
       expect(result).toBe('250 m');
     });
 
@@ -476,7 +476,7 @@ describe('RouteDisplayComponent', () => {
     it('should handle formatting with extreme values', () => {
       expect(component.formatDistance(0)).toBe('0 m');
       expect(component.formatDuration(0)).toBe('0m');
-      expect(component.formatDistance(999.999)).toBe('999 km 999 m');
+      expect(component.formatDistance(999999)).toBe('999 km 999 m');
     });
 
     it('should handle coordinates with many decimal places', () => {

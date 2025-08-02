@@ -1,0 +1,186 @@
+<div class="routes-page">
+  <!-- Page Header -->
+  <div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h1 class="h2 mb-1">
+          <i class="bi bi-map me-2"></i>
+          Routes
+        </h1>
+        <p class="text-muted mb-0">Discover and explore routes from the community</p>
+      </div>
+      <button
+        type="button"
+        class="btn btn-outline-primary"
+        (click)="onRefresh()"
+        [disabled]="loading()"
+        title="Refresh routes"
+      >
+        <i class="bi bi-arrow-clockwise" [class.spin]="loading()"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <app-route-filters (filtersChanged)="onFiltersChanged($event)" (resetFilters)="onFiltersReset()"> </app-route-filters>
+
+  <!-- Results Summary -->
+  <div class="results-summary mb-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="text-muted">{{ getResultsText() }}</span>
+      @if (showPagination()) {
+        <nav aria-label="Routes pagination">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="!hasPreviousPage()">
+              <button
+                class="page-link"
+                (click)="onPreviousPage()"
+                [disabled]="!hasPreviousPage()"
+                aria-label="Previous page"
+              >
+                <i class="bi bi-chevron-left"></i>
+              </button>
+            </li>
+
+            @for (pageNum of getPageNumbers(); track pageNum) {
+              <li class="page-item" [class.active]="pageNum === currentPage()">
+                <button
+                  class="page-link"
+                  (click)="onPageChange(pageNum)"
+                  [attr.aria-current]="pageNum === currentPage() ? 'page' : null"
+                >
+                  {{ pageNum + 1 }}
+                </button>
+              </li>
+            }
+
+            <li class="page-item" [class.disabled]="!hasNextPage()">
+              <button class="page-link" (click)="onNextPage()" [disabled]="!hasNextPage()" aria-label="Next page">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      }
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="row g-3">
+        @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+          <div class="col-lg-4 col-md-6">
+            <div class="card placeholder-glow">
+              <div class="card-header">
+                <span class="placeholder col-4"></span>
+                <span class="placeholder col-3 float-end"></span>
+              </div>
+              <div class="card-body">
+                <h5 class="card-title placeholder-glow">
+                  <span class="placeholder col-6"></span>
+                </h5>
+                <p class="card-text placeholder-glow">
+                  <span class="placeholder col-7"></span>
+                  <span class="placeholder col-4"></span>
+                </p>
+                <div class="row g-2 mb-3">
+                  <div class="col-4 text-center">
+                    <span class="placeholder col-8"></span>
+                  </div>
+                  <div class="col-4 text-center">
+                    <span class="placeholder col-8"></span>
+                  </div>
+                  <div class="col-4 text-center">
+                    <span class="placeholder col-8"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <span class="placeholder col-4"></span>
+                <span class="placeholder col-3 float-end"></span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <div class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div><strong>Error loading routes:</strong> {{ error() }}</div>
+        <button type="button" class="btn btn-outline-danger btn-sm ms-auto" (click)="onRefresh()">Try Again</button>
+      </div>
+    </div>
+  } @else if (!hasRoutes()) {
+    <div class="empty-state">
+      <div class="text-center py-5">
+        <i class="bi bi-map display-1 text-muted mb-3"></i>
+        <h3 class="text-muted">No routes found</h3>
+        <p class="text-muted mb-4">
+          No routes match your current filters. Try adjusting your search criteria or
+          <button type="button" class="btn btn-link p-0" (click)="onFiltersReset()">reset filters</button>.
+        </p>
+        <button type="button" class="btn btn-primary" routerLink="/map">
+          <i class="bi bi-plus-circle me-2"></i>
+          Create Your First Route
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="routes-grid">
+      <div class="row g-3">
+        @for (route of routes(); track route.id) {
+          <div class="col-lg-4 col-md-6">
+            <app-route-card
+              [route]="route"
+              (routeSelected)="onRouteSelected($event)"
+              (routeViewed)="onRouteViewed($event)"
+            >
+            </app-route-card>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Bottom Pagination -->
+    @if (showPagination()) {
+      <nav class="mt-4" aria-label="Routes pagination">
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="!hasPreviousPage()">
+            <button
+              class="page-link"
+              (click)="onPreviousPage()"
+              [disabled]="!hasPreviousPage()"
+              aria-label="Previous page"
+            >
+              <i class="bi bi-chevron-left me-1"></i>
+              Previous
+            </button>
+          </li>
+
+          @for (pageNum of getPageNumbers(); track pageNum) {
+            <li class="page-item" [class.active]="pageNum === currentPage()">
+              <button
+                class="page-link"
+                (click)="onPageChange(pageNum)"
+                [attr.aria-current]="pageNum === currentPage() ? 'page' : null"
+              >
+                {{ pageNum + 1 }}
+              </button>
+            </li>
+          }
+
+          <li class="page-item" [class.disabled]="!hasNextPage()">
+            <button class="page-link" (click)="onNextPage()" [disabled]="!hasNextPage()" aria-label="Next page">
+              Next
+              <i class="bi bi-chevron-right ms-1"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    }
+  }
+</div>

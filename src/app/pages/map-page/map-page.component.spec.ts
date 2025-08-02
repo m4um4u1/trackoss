@@ -5,6 +5,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Coordinates } from '../../models/coordinates';
 import { RoutePoint } from '../../models/route';
+import { ActivatedRoute } from '@angular/router';
 
 describe('MapPageComponent', () => {
   let component: MapPageComponent;
@@ -30,7 +31,20 @@ describe('MapPageComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MapPageComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (): string | null => null,
+              },
+            },
+          },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MapPageComponent);

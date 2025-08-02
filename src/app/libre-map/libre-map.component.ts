@@ -43,7 +43,6 @@ import { takeUntil } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
-  // Modern Angular 20 dependency injection
   private readonly mapService = inject(MapService);
   private readonly routeService = inject(RouteService);
   private readonly geolocationService = inject(GeolocationService);
@@ -100,6 +99,9 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
     if (this.multiWaypointRouteSubscription) {
       this.multiWaypointRouteSubscription.unsubscribe();
     }
+
+    // Clear the map signal when component is destroyed
+    this._map.set(undefined);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -115,6 +117,9 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading map tiles:', error);
+      },
+      complete: () => {
+        console.log('Map tiles data subscription completed');
       },
     });
   }

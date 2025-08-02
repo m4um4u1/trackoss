@@ -1,41 +1,19 @@
 import { ChangeDetectionStrategy, Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import {
-  ArrowDown,
-  ArrowUp,
-  CheckCircle,
-  Info,
-  List,
-  Loader2,
-  LucideAngularModule,
-  Plus,
-  Route,
-  Trash2,
-} from 'lucide-angular';
+
 import { MultiWaypointRoute, RoutePoint } from '../../models/route';
 import { Coordinates } from '../../models/coordinates';
 
 @Component({
   selector: 'app-waypoint-manager',
   standalone: true,
-  imports: [FormsModule, LucideAngularModule],
+  imports: [FormsModule],
   templateUrl: './waypoint-manager.component.html',
   styleUrls: ['./waypoint-manager.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WaypointManagerComponent {
-  // Lucide icons
-  readonly RouteIcon = Route;
-  readonly PlusIcon = Plus;
-  readonly Loader2Icon = Loader2;
-  readonly InfoIcon = Info;
-  readonly ListIcon = List;
-  readonly ArrowUpIcon = ArrowUp;
-  readonly ArrowDownIcon = ArrowDown;
-  readonly Trash2Icon = Trash2;
-  readonly CheckCircleIcon = CheckCircle;
-
   @Input() set waypoints(value: RoutePoint[]) {
     this._waypoints.set(value);
   }
@@ -226,15 +204,28 @@ export class WaypointManagerComponent {
 
   /**
    * Format distance for display
+   * @param distance Distance in meters
    */
   formatDistance(distance: number): string {
-    const kilometers = Math.floor(distance);
-    const meters = (distance - kilometers) * 1000;
+    // Ensure we have a valid number
+    if (isNaN(distance)) {
+      return 'N/A';
+    }
 
-    if (kilometers > 0) {
-      return `${kilometers} km ${Math.round(meters)} m`;
+    // If less than 1km, show in meters
+    if (distance < 1000) {
+      return `${Math.round(distance)} m`;
+    }
+
+    // For 1km or more, convert to kilometers
+    const distanceInKm = distance / 1000;
+    const kilometers = Math.floor(distanceInKm);
+    const remainingMeters = Math.round((distanceInKm - kilometers) * 1000);
+
+    if (remainingMeters > 0) {
+      return `${kilometers} km ${remainingMeters} m`;
     } else {
-      return `${Math.round(meters)} m`;
+      return `${kilometers} km`;
     }
   }
 

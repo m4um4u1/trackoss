@@ -3,7 +3,7 @@
 set -e
 
 # Default values for environment variables
-MAP_TILE_PROXY_BASE_URL=${MAP_TILE_PROXY_BASE_URL:-"/api/map-proxy"}
+BASE_URL=${BASE_URL:-"/api/map-proxy"}
 VALHALLA_URL=${VALHALLA_URL:-"/api/valhalla"}
 
 echo "Starting trackoss container..."
@@ -21,7 +21,7 @@ if [ -f "$CONFIG_FILE" ]; then
     TEMP_FILE=$(mktemp)
 
     # Replace placeholders with actual values using sed
-    sed "s|__MAP_TILE_PROXY_BASE_URL__|$MAP_TILE_PROXY_BASE_URL|g" "$CONFIG_FILE" | \
+    sed "s|__BASE_URL__|$BASE_URL|g" "$CONFIG_FILE" | \
     sed "s|__VALHALLA_URL__|$VALHALLA_URL|g" > "$TEMP_FILE"
 
     # Move the temporary file back to the original location
@@ -38,7 +38,7 @@ else
 
     cat > "$CONFIG_FILE" << EOF
 {
-  "mapTileProxyBaseUrl": "$MAP_TILE_PROXY_BASE_URL",
+  "baseUrl": "$BASE_URL",
   "valhallaUrl": "$VALHALLA_URL"
 }
 EOF

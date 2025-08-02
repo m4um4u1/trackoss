@@ -45,14 +45,53 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  formatDistance(distance: number): string {
-    const kilometers = Math.floor(distance);
-    const meters = (distance - kilometers) * 1000;
+  formatDistance(distance: number | string): string {
+    // Handle null/undefined values
+    if (distance == null) {
+      return 'N/A';
+    }
 
-    if (kilometers > 0) {
-      return `${kilometers} km ${Math.round(meters)} m`;
+    let distanceInMeters: number;
+
+    // If it's already a number, use it directly
+    if (typeof distance === 'number') {
+      distanceInMeters = distance;
     } else {
-      return `${Math.round(meters)} m`;
+      // If it's a string, handle potential thousands separators
+      const distanceStr = distance.toString();
+
+      // Check if it looks like a thousands separator format
+      // Pattern: digits.digits where the part after the dot has exactly 3 digits
+      const thousandsSeparatorPattern = /^(\d+)\.(\d{3})$/;
+      const match = distanceStr.match(thousandsSeparatorPattern);
+
+      if (match) {
+        // This looks like a thousands separator (e.g., "32.021" = 32,021)
+        distanceInMeters = parseInt(match[1] + match[2]);
+      } else {
+        // Normal decimal number or other format
+        distanceInMeters = parseFloat(distanceStr);
+      }
+    }
+
+    // Ensure we have a valid number
+    if (isNaN(distanceInMeters)) {
+      return 'N/A';
+    }
+
+    // If less than 1000m, show only in meters
+    if (distanceInMeters < 1000) {
+      return `${Math.round(distanceInMeters)} m`;
+    }
+
+    // For 1000m or more, show km and remaining meters
+    const km = Math.floor(distanceInMeters / 1000);
+    const remainingMeters = Math.round(distanceInMeters % 1000);
+
+    if (remainingMeters === 0) {
+      return `${km} km`;
+    } else {
+      return `${km} km ${remainingMeters} m`;
     }
   }
 

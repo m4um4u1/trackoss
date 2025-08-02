@@ -1,0 +1,147 @@
+<div class="route-filters">
+  <!-- Filter Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">
+      <i class="bi bi-funnel me-2"></i>
+      Filters
+    </h5>
+    <div>
+      <button type="button" class="btn btn-outline-secondary btn-sm me-2" (click)="onReset()" title="Reset all filters">
+        <i class="bi bi-arrow-clockwise"></i>
+        Reset
+      </button>
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm d-md-none"
+        (click)="toggleCollapse()"
+        [attr.aria-expanded]="!isCollapsed()"
+        aria-controls="filterCollapse"
+      >
+        <i class="bi" [class.bi-chevron-down]="isCollapsed()" [class.bi-chevron-up]="!isCollapsed()"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Collapsible Filter Content -->
+  <div class="collapse" [class.show]="!isCollapsed()" id="filterCollapse">
+    <div class="row g-3">
+      <!-- Search Text -->
+      <div class="col-12">
+        <label for="searchText" class="form-label">Search Routes</label>
+        <div class="input-group">
+          <span class="input-group-text">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            type="text"
+            class="form-control"
+            id="searchText"
+            placeholder="Search by name or description..."
+            [(ngModel)]="filters().searchText"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+      </div>
+
+      <!-- Route Type -->
+      <div class="col-md-6">
+        <label for="routeType" class="form-label">Route Type</label>
+        <select class="form-select" id="routeType" [(ngModel)]="filters().routeType" (ngModelChange)="onFilterChange()">
+          <option value="">All Types</option>
+          @for (key of getRouteTypeKeys(); track key) {
+            <option [value]="getRouteTypeValue(key)">
+              {{ formatEnumValue(key) }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <!-- Difficulty -->
+      <div class="col-md-6">
+        <label for="difficulty" class="form-label">Difficulty</label>
+        <select
+          class="form-select"
+          id="difficulty"
+          [(ngModel)]="filters().difficulty"
+          (ngModelChange)="onFilterChange()"
+        >
+          <option value="">Any Difficulty</option>
+          @for (option of difficultyOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Distance Range (in km) -->
+      <div class="col-12">
+        <label class="form-label">Distance Range (km)</label>
+        <div class="row g-2">
+          <div class="col-6">
+            <div class="input-group">
+              <input
+                type="number"
+                class="form-control"
+                placeholder="0"
+                min="0"
+                step="0.1"
+                [(ngModel)]="filters().minDistance"
+                (ngModelChange)="onFilterChange()"
+              />
+              <span class="input-group-text">km</span>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="input-group">
+              <input
+                type="number"
+                class="form-control"
+                placeholder="100"
+                min="0"
+                step="0.1"
+                [(ngModel)]="filters().maxDistance"
+                (ngModelChange)="onFilterChange()"
+              />
+              <span class="input-group-text">km</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Surface Type -->
+      <div class="col-md-6">
+        <label for="surfaceType" class="form-label">Surface Type</label>
+        <select
+          class="form-select"
+          id="surfaceType"
+          [(ngModel)]="filters().surfaceType"
+          (ngModelChange)="onFilterChange()"
+        >
+          <option value="">Any Surface</option>
+          @for (key of getSurfaceTypeKeys(); track key) {
+            <option [value]="getSurfaceTypeValue(key)">
+              {{ formatEnumValue(key) }}
+            </option>
+          }
+        </select>
+      </div>
+
+      <!-- Sort Options -->
+      <div class="col-md-8">
+        <label for="sortBy" class="form-label">Sort By</label>
+        <select class="form-select" id="sortBy" [(ngModel)]="filters().sortBy" (ngModelChange)="onFilterChange()">
+          @for (option of sortOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label for="sortOrder" class="form-label">Order</label>
+        <select class="form-select" id="sortOrder" [(ngModel)]="filters().sortOrder" (ngModelChange)="onFilterChange()">
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
