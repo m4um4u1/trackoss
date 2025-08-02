@@ -69,7 +69,7 @@ describe('RouteService', () => {
     const configServiceSpy = {
       loadConfig: jest.fn().mockReturnValue(
         of({
-          mapTileProxyBaseUrl: 'http://test-config.com/api/map-proxy',
+          baseUrl: 'http://test-config.com/api/map-proxy',
           valhallaUrl: 'http://test-config.com/valhalla',
         }),
       ),
@@ -1410,8 +1410,8 @@ describe('RouteService', () => {
       id: '123e4567-e89b-12d3-a456-426614174000',
       name: 'Test Route',
       description: 'A test cycling route',
-      createdAt: '2024-01-01T10:00:00Z',
-      updatedAt: '2024-01-01T10:00:00Z',
+      createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
+      updatedAt: [2025, 8, 3, 3, 14, 3, 610235000],
       userId: 'user123',
       totalDistance: 5000,
       totalElevationGain: 100,

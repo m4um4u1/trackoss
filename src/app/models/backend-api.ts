@@ -28,8 +28,8 @@ export interface RouteResponse {
   id: string; // UUID
   name: string;
   description?: string;
-  createdAt: string; // ISO date-time
-  updatedAt: string; // ISO date-time
+  createdAt: number[]; // ISO date-time
+  updatedAt: number[]; // ISO date-time
   userId: string;
   totalDistance: number; // meters
   totalElevationGain: number; // meters

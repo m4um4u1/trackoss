@@ -6,37 +6,12 @@ import { of } from 'rxjs';
 
 import { RouteCalculatorComponent } from './route-calculator.component';
 import { RouteService } from '../../services/route.service';
-import { RouteResult } from '../../models/route';
 
 describe('RouteCalculatorComponent', () => {
   let component: RouteCalculatorComponent;
   let fixture: ComponentFixture<RouteCalculatorComponent>;
   let routeService: jest.Mocked<RouteService>;
   let httpTestingController: HttpTestingController;
-
-  const mockRouteResult: RouteResult = {
-    startPoint: { lat: 52.520008, lon: 13.404954 },
-    endPoint: { lat: 52.516275, lon: 13.377704 },
-    routeData: {
-      type: 'FeatureCollection',
-      features: [
-        {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: [
-              [13.404954, 52.520008],
-              [13.377704, 52.516275],
-            ],
-          },
-        },
-      ],
-    },
-    distance: 1000,
-    duration: 300,
-  };
-
   beforeEach(async () => {
     const routeServiceSpy = {
       calculateRoute: jest.fn(),
@@ -83,8 +58,8 @@ describe('RouteCalculatorComponent', () => {
   });
 
   it('should disable calculate button when points are missing', () => {
-    component.startPointText = 'Berlin';
-    component.endPointText = '';
+    component.updateStartPointText('Berlin');
+    component.updateEndPointText('');
     expect(component.canCalculateRoute()).toBeFalse();
   });
 
@@ -193,7 +168,7 @@ describe('RouteCalculatorComponent', () => {
   // Additional comprehensive tests for better coverage
   describe('Route Calculation Logic', () => {
     it('should not calculate route when already calculating', () => {
-      component.isCalculating = true;
+      component['_isCalculating'].set(true);
       jest.spyOn(component.coordinatesReady, 'emit');
 
       component.calculateRoute();
@@ -202,8 +177,8 @@ describe('RouteCalculatorComponent', () => {
     });
 
     it('should not calculate route when inputs are invalid', () => {
-      component.startPointText = '';
-      component.endPointText = '';
+      component.updateStartPointText('');
+      component.updateEndPointText('');
       jest.spyOn(component.coordinatesReady, 'emit');
 
       component.calculateRoute();
@@ -298,13 +273,10 @@ describe('RouteCalculatorComponent', () => {
     });
 
     it('should update route options', () => {
-      component.routeOptions.costing = 'pedestrian';
-      component.routeOptions.color = '#ff0000';
-      component.routeOptions.width = 6;
-
-      expect(component.routeOptions.costing).toBe('pedestrian');
-      expect(component.routeOptions.color).toBe('#ff0000');
-      expect(component.routeOptions.width).toBe(6);
+      component.updateRouteOptions({ costing: 'pedestrian', color: '#ff0000', width: 6 });
+      expect(component.routeOptions().costing).toBe('pedestrian');
+      expect(component.routeOptions().color).toBe('#ff0000');
+      expect(component.routeOptions().width).toBe(6);
     });
   });
 
@@ -369,19 +341,18 @@ describe('RouteCalculatorComponent', () => {
     });
 
     it('should have timeout functionality for success message', () => {
-      component.successMessage = 'Route calculated successfully!';
-
+      component['_successMessage'].set('Route calculated successfully!');
       // Simulate the timeout that would be set in the component
       setTimeout(() => {
-        component.successMessage = '';
+        component['_successMessage'].set('');
       }, 3000);
 
-      expect(component.successMessage).toBe('Route calculated successfully!');
+      expect(component.successMessage()).toBe('Route calculated successfully!');
 
       // Fast-forward time by 3 seconds
       jest.advanceTimersByTime(3000);
 
-      expect(component.successMessage).toBe('');
+      expect(component.successMessage()).toBe('');
     });
   });
 });

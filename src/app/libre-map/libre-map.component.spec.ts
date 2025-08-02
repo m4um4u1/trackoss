@@ -146,10 +146,9 @@ describe('LibreMapComponent', () => {
     geolocationService.requestLocationWithConsent.mockReturnValue(of(mockCoordinates));
 
     // Mock the map instance
-    component.map = {
+    component['_map'].set({
       flyTo: jest.fn(),
-    } as any;
-
+    } as any);
     // Call the method
     component.requestUserLocationConsent();
 
@@ -186,10 +185,9 @@ describe('LibreMapComponent', () => {
       },
     };
 
-    component.map = {
+    component['_map'].set({
       getSource: jest.fn().mockReturnValue(null),
-    } as any; // Mock map instance
-    component.ngOnChanges(changes);
+    } as any); // Mock map instance
 
     // Just verify the method was called without error
     expect(component.map).toBeDefined();
@@ -205,11 +203,11 @@ describe('LibreMapComponent', () => {
       },
     };
 
-    component.map = undefined;
+    component['_map'].set(undefined);
     component.ngOnChanges(changes);
 
     // Just verify no error occurred
-    expect(component.map).toBeUndefined();
+    expect(component.map()).toBeUndefined();
   });
 
   it('should clean up subscriptions on destroy', () => {
@@ -243,7 +241,7 @@ describe('LibreMapComponent', () => {
 
   it('should handle route display when showRoute is true', () => {
     component.showRoute = true;
-    component.map = mockMap as any;
+    component['_map'].set(mockMap as any);
 
     const changes: SimpleChanges = {
       showRoute: {
@@ -276,7 +274,7 @@ describe('LibreMapComponent', () => {
       },
     ];
     component.waypoints = mockWaypoints;
-    component.map = mockMap as any;
+    component['_map'].set(mockMap as any);
 
     const changes: SimpleChanges = {
       waypoints: {
@@ -296,7 +294,7 @@ describe('LibreMapComponent', () => {
     geolocationService.requestLocationWithConsent.mockReturnValue(throwError(() => mockError));
 
     // Set the map so the method doesn't return early
-    component.map = mockMap as any;
+    component['_map'].set(mockMap as any);
 
     component.requestUserLocationConsent();
 
@@ -309,6 +307,16 @@ describe('LibreMapComponent', () => {
     component.ngOnInit();
 
     expect(mapService.getMapTiles).toHaveBeenCalledWith('outdoor');
+    expect(component.mapStyleUrl()).toBe('');
+  });
+
+  it('should handle map style loading success', () => {
+    mapService.getMapTiles.mockReturnValue(of('mock-style-url'));
+
+    component.ngOnInit();
+
+    expect(mapService.getMapTiles).toHaveBeenCalledWith('outdoor');
+    expect(component.mapStyleUrl()).toBe('mock-style-url');
   });
 
   // Additional tests for better coverage
@@ -329,7 +337,7 @@ describe('LibreMapComponent', () => {
     ];
 
     beforeEach(() => {
-      component.map = mockMap as any;
+      component['_map'].set(mockMap as any);
     });
 
     it('should clear waypoint markers when disabling waypoint mode', () => {
@@ -359,7 +367,7 @@ describe('LibreMapComponent', () => {
 
   describe('Marker Management Tests', () => {
     beforeEach(() => {
-      component.map = mockMap as any;
+      component['_map'].set(mockMap as any);
     });
 
     it('should set start point property', () => {
@@ -379,12 +387,15 @@ describe('LibreMapComponent', () => {
     it('should handle component destruction properly', () => {
       // Test that ngOnDestroy completes subscriptions without errors
       expect(() => component.ngOnDestroy()).not.toThrow();
+
+      // Verify the map signal is cleared
+      expect(component.map()).toBeUndefined();
     });
   });
 
   describe('Route Calculation Tests', () => {
     beforeEach(() => {
-      component.map = mockMap as any;
+      component['_map'].set(mockMap as any);
       component.showRoute = true;
     });
 
@@ -423,7 +434,7 @@ describe('LibreMapComponent', () => {
 
   describe('Map Click Handling Tests', () => {
     beforeEach(() => {
-      component.map = mockMap as any;
+      component['_map'].set(mockMap as any);
     });
 
     it('should emit waypointsChanged when waypoints are modified', () => {
@@ -440,7 +451,7 @@ describe('LibreMapComponent', () => {
 
   describe('Traditional Route to Waypoint Conversion Tests', () => {
     beforeEach(() => {
-      component.map = mockMap as any;
+      component['_map'].set(mockMap as any);
       jest.spyOn(component.startPointChanged, 'emit');
       jest.spyOn(component.endPointChanged, 'emit');
       jest.spyOn(component.waypointsChanged, 'emit');
@@ -565,7 +576,7 @@ describe('LibreMapComponent', () => {
   // Additional comprehensive tests for better coverage
   describe('Advanced Map Interaction Tests', () => {
     beforeEach(() => {
-      component.map = mockMap as any;
+      component['_map'].set(mockMap as any);
     });
 
     it('should handle geolocation error during map load', () => {
@@ -573,12 +584,12 @@ describe('LibreMapComponent', () => {
 
       component.onMapLoad(mockMap as any);
 
-      expect(component.map).toBe(mockMap as any);
+      expect(component.map()).toBe(mockMap as any);
       expect(geolocationService.requestLocationWithConsent).toHaveBeenCalled();
     });
 
     it('should handle updateMarkersAndBounds with no map instance', () => {
-      component.map = undefined;
+      component['_map'].set(mockMap as any);
 
       expect(() => {
         (component as any).updateMarkersAndBounds();
@@ -699,7 +710,7 @@ describe('LibreMapComponent', () => {
 
     it('should handle undefined waypoints in waypoint mode', () => {
       component.waypoints = undefined;
-      component.map = mockMap as any;
+      component['_map'].set(mockMap as any);
 
       const changes = {
         waypoints: {
@@ -762,7 +773,7 @@ describe('LibreMapComponent', () => {
     });
 
     it('should handle updateMapViewForWaypoints with no map instance', () => {
-      component.map = undefined;
+      component['_map'].set(undefined);
       component.waypoints = [
         {
           coordinates: { lat: 52.520008, lon: 13.404954 },

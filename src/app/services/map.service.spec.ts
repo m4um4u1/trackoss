@@ -2,14 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { MapService } from './map.service';
-import { ConfigService } from './config.service';
-import { environment } from '../../environments/environments';
+import { BackendApiService } from './backend-api.service';
 import { of } from 'rxjs';
 
 describe('MapService', () => {
   let service: MapService;
   let httpMock: HttpTestingController;
-  let configService: jest.Mocked<ConfigService>;
+  let backendApiService: jest.Mocked<BackendApiService>;
 
   const mockStyleResponse = {
     version: 8,
@@ -19,13 +18,8 @@ describe('MapService', () => {
   };
 
   beforeEach(() => {
-    const configServiceSpy = {
-      loadConfig: jest.fn().mockReturnValue(
-        of({
-          mapTileProxyBaseUrl: 'http://test-config.com/api/map-proxy',
-          valhallaUrl: 'http://test-config.com/valhalla',
-        }),
-      ),
+    const backendApiServiceSpy = {
+      getMapProxyUrl: jest.fn().mockReturnValue(of('/api/map-proxy')),
     };
 
     TestBed.configureTestingModule({
@@ -33,12 +27,12 @@ describe('MapService', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         MapService,
-        { provide: ConfigService, useValue: configServiceSpy },
+        { provide: BackendApiService, useValue: backendApiServiceSpy },
       ],
     });
     service = TestBed.inject(MapService);
     httpMock = TestBed.inject(HttpTestingController);
-    configService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
+    backendApiService = TestBed.inject(BackendApiService) as jest.Mocked<BackendApiService>;
   });
 
   afterEach(() => {
@@ -49,44 +43,29 @@ describe('MapService', () => {
     expect(service).toBeTruthy();
   });
 
-  describe('Environment Configuration Tests', () => {
-    it('should use environment URLs in development mode', () => {
-      // Mock development environment
-      const originalEnv = environment.production;
-      const originalUseConfig = environment.useConfigService;
-      (environment as any).production = false;
-      (environment as any).useConfigService = false;
-
+  describe('Map Proxy URL Tests', () => {
+    it('should use BackendApiService to get map proxy URL', () => {
       const style = 'outdoor';
       service.getMapTiles(style).subscribe();
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      expect(backendApiService.getMapProxyUrl).toHaveBeenCalled();
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       expect(req.request.method).toBe('GET');
       req.flush(mockStyleResponse);
-
-      // Restore original environment
-      (environment as any).production = originalEnv;
-      (environment as any).useConfigService = originalUseConfig;
     });
 
-    it('should use ConfigService URLs in production mode', () => {
-      // Mock production environment
-      const originalEnv = environment.production;
-      const originalUseConfig = environment.useConfigService;
-      (environment as any).production = true;
-      (environment as any).useConfigService = true;
+    it('should handle different map styles', () => {
+      const style = 'satellite';
 
-      const style = 'outdoor';
+      // Mock a different URL return value
+      backendApiService.getMapProxyUrl.mockReturnValue(of('/api/map-proxy'));
+
       service.getMapTiles(style).subscribe();
 
-      expect(configService.loadConfig).toHaveBeenCalled();
-      const req = httpMock.expectOne(`http://test-config.com/api/map-proxy/${style}/style.json`);
+      expect(backendApiService.getMapProxyUrl).toHaveBeenCalled();
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       expect(req.request.method).toBe('GET');
       req.flush(mockStyleResponse);
-
-      // Restore original environment
-      (environment as any).production = originalEnv;
-      (environment as any).useConfigService = originalUseConfig;
     });
   });
 
@@ -97,7 +76,7 @@ describe('MapService', () => {
       expect(response).toEqual(mockStyleResponse);
     });
 
-    const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
     expect(req.request.method).toBe('GET');
     req.flush(mockStyleResponse);
   });
@@ -110,7 +89,7 @@ describe('MapService', () => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       expect(req.request.method).toBe('GET');
       req.flush(mockStyleResponse);
     });
@@ -128,13 +107,13 @@ describe('MapService', () => {
       },
     });
 
-    const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
     req.error(new ErrorEvent('Network error'));
   });
 
-  it('should use correct base URL from environment', () => {
+  it('should use correct map proxy URL', () => {
     const style = 'test-style';
-    const expectedUrl = `${environment.mapTileProxyBaseUrl}/${style}/style.json`;
+    const expectedUrl = `/api/map-proxy/${style}/style.json`;
 
     service.getMapTiles(style).subscribe();
 
@@ -150,7 +129,7 @@ describe('MapService', () => {
       expect(response).toEqual(mockStyleResponse);
     });
 
-    const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
     req.flush(mockStyleResponse);
   });
 
@@ -161,7 +140,7 @@ describe('MapService', () => {
       expect(response).toEqual(mockStyleResponse);
     });
 
-    const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
     req.flush(mockStyleResponse);
   });
 
@@ -178,7 +157,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.error(new ErrorEvent('Server error'), { status: 500, statusText: 'Internal Server Error' });
     });
 
@@ -194,7 +173,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.error(new ProgressEvent('timeout'), { status: 0, statusText: 'Timeout' });
     });
 
@@ -210,7 +189,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.flush('invalid json', { headers: { 'content-type': 'application/json' } });
     });
 
@@ -226,7 +205,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.flush(null);
     });
 
@@ -242,7 +221,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.flush({});
     });
 
@@ -253,7 +232,7 @@ describe('MapService', () => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.flush(mockStyleResponse);
     });
 
@@ -264,7 +243,7 @@ describe('MapService', () => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.flush(mockStyleResponse);
     });
 
@@ -286,7 +265,7 @@ describe('MapService', () => {
       request3.subscribe({ next: checkResponse });
 
       // Should make 3 separate requests
-      const reqs = httpMock.match(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const reqs = httpMock.match(`/api/map-proxy/${style}/style.json`);
       expect(reqs.length).toBe(3);
 
       reqs.forEach((req) => req.flush(mockStyleResponse));
@@ -303,7 +282,7 @@ describe('MapService', () => {
       });
 
       styles.forEach((style) => {
-        const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+        const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
         req.flush(mockStyleResponse);
       });
     });
@@ -320,7 +299,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
     });
 
@@ -336,7 +315,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.error(new ErrorEvent('Not found'), { status: 404, statusText: 'Not Found' });
     });
 
@@ -352,7 +331,7 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.error(new ErrorEvent('Forbidden'), { status: 403, statusText: 'Forbidden' });
     });
 
@@ -418,7 +397,7 @@ describe('MapService', () => {
         expect(response.fog).toBeDefined();
       });
 
-      const req = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req.flush(complexStyleResponse);
     });
 
@@ -440,7 +419,7 @@ describe('MapService', () => {
         },
       });
 
-      const req1 = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req1 = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req1.error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
 
       // Second request - server error
@@ -453,7 +432,7 @@ describe('MapService', () => {
         },
       });
 
-      const req2 = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req2 = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req2.error(new ErrorEvent('Server error'), { status: 500, statusText: 'Internal Server Error' });
 
       // Third request - success
@@ -461,7 +440,7 @@ describe('MapService', () => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req3 = httpMock.expectOne(`${environment.mapTileProxyBaseUrl}/${style}/style.json`);
+      const req3 = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
       req3.flush(mockStyleResponse);
     });
   });

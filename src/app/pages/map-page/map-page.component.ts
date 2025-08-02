@@ -1,22 +1,23 @@
 import { ChangeDetectorRef, Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NgClass } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 
-import { Columns, LucideAngularModule } from 'lucide-angular';
 import { LibreMapComponent } from '../../libre-map/libre-map.component';
 import { MapSidepanelComponent } from '../../map-sidepanel/map-sidepanel.component';
 import { Coordinates } from '../../models/coordinates';
 import { MultiWaypointRoute, RoutePoint, RouteResult } from '../../models/route';
 import { RouteService } from '../../services/route.service';
+import { BackendApiService } from '../../services/backend-api.service';
+import { RouteResponse } from '../../models/backend-api';
 
 @Component({
   selector: 'app-map-page',
-  imports: [NgClass, LucideAngularModule, LibreMapComponent, MapSidepanelComponent],
+  imports: [NgClass, LibreMapComponent, MapSidepanelComponent],
   templateUrl: './map-page.component.html',
   styleUrl: './map-page.component.scss',
   standalone: true,
 })
 export class MapPageComponent implements OnInit, OnDestroy {
-  readonly ColumnsIcon = Columns;
   @ViewChild(LibreMapComponent) mapComponent?: LibreMapComponent;
 
   public currentStartPoint?: Coordinates;
@@ -32,11 +33,53 @@ export class MapPageComponent implements OnInit, OnDestroy {
     private routeService: RouteService,
     private elementRef: ElementRef,
     private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
+    private backendApiService: BackendApiService,
   ) {}
 
   ngOnInit(): void {
     this.checkScreenSize();
     this.updateCSSProperties();
+    this.loadRouteFromQueryParams();
+  }
+
+  private loadRouteFromQueryParams(): void {
+    // Get routeId from query parameters
+    const routeId = this.route.snapshot.queryParamMap.get('routeId');
+    if (routeId) {
+      this.backendApiService.getRoute(routeId).subscribe({
+        next: (routeResponse) => {
+          // Convert route response to waypoints and set them
+          this.convertRouteResponseToWaypoints(routeResponse);
+        },
+        error: (error) => {
+          console.error('Error loading route:', error);
+        },
+      });
+    }
+  }
+
+  private convertRouteResponseToWaypoints(routeResponse: RouteResponse): void {
+    // Extract coordinates from route points
+    const waypoints: RoutePoint[] = routeResponse.points.map((point, index) => {
+      let type: 'start' | 'waypoint' | 'end' = 'waypoint';
+      if (index === 0) {
+        type = 'start';
+      } else if (index === routeResponse.points.length - 1) {
+        type = 'end';
+      }
+
+      return {
+        coordinates: { lat: point.latitude, lon: point.longitude },
+        type: type,
+        id: `waypoint-${point.id || index}`,
+        order: index,
+        name: point.name || `${type.charAt(0).toUpperCase() + type.slice(1)} Point`,
+      };
+    });
+
+    // Set waypoints to trigger map update
+    this.currentWaypoints = waypoints;
   }
 
   ngOnDestroy(): void {

@@ -228,9 +228,9 @@ describe('WaypointManagerComponent', () => {
   });
 
   it('should format distance correctly', () => {
-    expect(component.formatDistance(1.5)).toBe('1 km 500 m');
-    expect(component.formatDistance(0.5)).toBe('500 m');
-    expect(component.formatDistance(2.0)).toBe('2 km 0 m');
+    expect(component.formatDistance(1500)).toBe('1 km 500 m');
+    expect(component.formatDistance(500.0)).toBe('500 m');
+    expect(component.formatDistance(2000.0)).toBe('2 km');
   });
 
   it('should format duration correctly', () => {
@@ -378,11 +378,11 @@ describe('WaypointManagerComponent', () => {
     });
 
     it('should format distance with zero kilometers', () => {
-      expect(component.formatDistance(0.123)).toBe('123 m');
+      expect(component.formatDistance(123)).toBe('123 m');
     });
 
     it('should format distance with exact kilometers', () => {
-      expect(component.formatDistance(5.0)).toBe('5 km 0 m');
+      expect(component.formatDistance(5000.0)).toBe('5 km');
     });
 
     it('should format duration with zero hours', () => {

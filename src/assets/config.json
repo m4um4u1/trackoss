@@ -1,4 +1,4 @@
 {
-  "mapTileProxyBaseUrl": "__MAP_TILE_PROXY_BASE_URL__",
+  "baseUrl": "__BASE_URL__",
   "valhallaUrl": "__VALHALLA_URL__"
 }

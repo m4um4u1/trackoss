@@ -37,7 +37,7 @@ Modify `src/environments/environments.ts`:
 export const environment = {
   production: false,
   // Update this URL to where your backend is running
-  mapTileProxyBaseUrl: 'http://your-backend-host:your-backend-port/api/map-proxy',
+  baseUrl: 'http://your-backend-host:your-backend-port',
 };
 ```
 

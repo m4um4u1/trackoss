@@ -36,7 +36,7 @@ export const mockResponses = {
 
   // Application configuration
   config: {
-    mapTileProxyBaseUrl: '/api/map-proxy',
+    baseUrl: '/api/map-proxy',
     valhallaUrl: '/api/valhalla',
   },
 
