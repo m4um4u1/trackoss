@@ -319,6 +319,12 @@ describe('RouteDisplayComponent', () => {
       const result = component.formatCoordinates(coords);
       expect(result).toBe('-34.6037, -58.3816');
     });
+
+    it('should handle distance in kilometers format correctly', () => {
+      // Test with a decimal value that might be interpreted as kilometers
+      const result = component.formatDistance(1.5);
+      expect(result).toBe('1 km 500 m');
+    });
   });
 
   describe('Helper Methods', () => {
