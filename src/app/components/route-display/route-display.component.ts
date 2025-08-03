@@ -58,20 +58,18 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
       distanceInMeters = distance;
     } else {
       // If it's a string, handle potential thousands separators
-      const distanceStr = distance.toString();
+      const distanceStr = distance.toString().replace(/,/g, '').trim();
 
-      // Check if it looks like a thousands separator format
-      // Pattern: digits.digits where the part after the dot has exactly 3 digits
-      const thousandsSeparatorPattern = /^(\d+)\.(\d{3})$/;
-      const match = distanceStr.match(thousandsSeparatorPattern);
+      // Try to parse as a number
+      distanceInMeters = parseFloat(distanceStr);
+    }
 
-      if (match) {
-        // This looks like a thousands separator (e.g., "32.021" = 32,021)
-        distanceInMeters = parseInt(match[1] + match[2]);
-      } else {
-        // Normal decimal number or other format
-        distanceInMeters = parseFloat(distanceStr);
-      }
+    // Handle case where the number might be in kilometers (e.g., 1.5 for 1500m)
+    // This is a common convention in many systems
+    // Only convert if the value is a decimal between 0 and 100
+    if (distanceInMeters > 0 && distanceInMeters < 100 && distance.toString().indexOf('.') !== -1) {
+      // If it's a small decimal number, it might be in kilometers
+      distanceInMeters *= 1000;
     }
 
     // Ensure we have a valid number
