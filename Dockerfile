@@ -26,7 +26,7 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 # Set default environment variables (can be overridden at runtime)
-ENV MAP_TILE_PROXY_BASE_URL="/api/map-proxy"
+ENV BASE_URL="/api/map-proxy"
 ENV VALHALLA_URL="/api/valhalla"
 
 EXPOSE 80
