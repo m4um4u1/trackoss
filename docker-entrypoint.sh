@@ -7,7 +7,7 @@ BASE_URL=${BASE_URL:-"/api/map-proxy"}
 VALHALLA_URL=${VALHALLA_URL:-"/api/valhalla"}
 
 echo "Starting trackoss container..."
-echo "Map Tile Proxy Base URL: $MAP_TILE_PROXY_BASE_URL"
+echo "Map Tile Proxy Base URL: $BASE_URL"
 echo "Valhalla URL: $VALHALLA_URL"
 
 # Path to the configuration file

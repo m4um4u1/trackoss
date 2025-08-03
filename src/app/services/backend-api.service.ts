@@ -253,7 +253,7 @@ export class BackendApiService {
    */
   private getBackendBaseUrl(): Observable<string> {
     if (environment.production && environment.useConfigService) {
-      return this.configService.loadConfig().pipe(map((config) => config.valhallaUrl.replace('/valhalla', '')));
+      return this.configService.loadConfig().pipe(map((config) => config.baseUrl));
     } else {
       // In development, use the environment baseUrl directly
       return of(environment.baseUrl);
@@ -266,7 +266,7 @@ export class BackendApiService {
    */
   getMapProxyUrl(): Observable<string> {
     if (environment.production && environment.useConfigService) {
-      return this.configService.loadConfig().pipe(map((config) => config.baseUrl));
+      return this.configService.loadConfig().pipe(map((config) => config.baseUrl + '/api/map-proxy'));
     } else {
       // In development, use the environment baseUrl which includes
       return of(environment.baseUrl + '/api/map-proxy');
