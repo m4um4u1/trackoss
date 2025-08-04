@@ -553,41 +553,23 @@ export class RouteService {
     isPublic: boolean = false,
     metadata?: RouteMetadata,
   ): RouteCreateRequest {
-    const coordinates = routeResult.routeData.features[0]?.geometry.coordinates || [];
     const points: RoutePointRequest[] = [];
 
-    // Add start point
-    if (coordinates.length > 0) {
-      const startCoord = coordinates[0];
-      points.push({
-        latitude: startCoord[1],
-        longitude: startCoord[0],
-        pointType: PointType.START_POINT,
-        name: 'Start',
-      });
-    }
+    // Only save start and end points - no track points
+    // The route geometry is only used for drawing on the map
+    points.push({
+      latitude: routeResult.startPoint.lat,
+      longitude: routeResult.startPoint.lon,
+      pointType: PointType.START_POINT,
+      name: 'Start',
+    });
 
-    // Add track points (sample every 10th point to avoid too many points)
-    const sampleRate = Math.max(1, Math.floor(coordinates.length / 100)); // Max 100 track points
-    for (let i = 1; i < coordinates.length - 1; i += sampleRate) {
-      const coord = coordinates[i];
-      points.push({
-        latitude: coord[1],
-        longitude: coord[0],
-        pointType: PointType.TRACK_POINT,
-      });
-    }
-
-    // Add end point
-    if (coordinates.length > 1) {
-      const endCoord = coordinates[coordinates.length - 1];
-      points.push({
-        latitude: endCoord[1],
-        longitude: endCoord[0],
-        pointType: PointType.END_POINT,
-        name: 'End',
-      });
-    }
+    points.push({
+      latitude: routeResult.endPoint.lat,
+      longitude: routeResult.endPoint.lon,
+      pointType: PointType.END_POINT,
+      name: 'End',
+    });
 
     return {
       name,
@@ -612,10 +594,9 @@ export class RouteService {
     isPublic: boolean = false,
     metadata?: RouteMetadata,
   ): RouteCreateRequest {
-    const coordinates = multiWaypointRoute.routeData.features[0]?.geometry.coordinates || [];
     const points: RoutePointRequest[] = [];
 
-    // Add waypoints first
+    // Save ONLY user waypoints - no track points from Valhalla
     multiWaypointRoute.waypoints.forEach((waypoint, index) => {
       let pointType: PointType;
       if (index === 0) {
@@ -634,17 +615,6 @@ export class RouteService {
       });
     });
 
-    // Add track points (sample to avoid too many points)
-    const sampleRate = Math.max(1, Math.floor(coordinates.length / 100)); // Max 100 track points
-    for (let i = 1; i < coordinates.length - 1; i += sampleRate) {
-      const coord = coordinates[i];
-      points.push({
-        latitude: coord[1],
-        longitude: coord[0],
-        pointType: PointType.TRACK_POINT,
-      });
-    }
-
     return {
       name,
       description,
@@ -655,5 +625,39 @@ export class RouteService {
       estimatedDuration: multiWaypointRoute.totalDuration,
       metadata: metadata ? serializeRouteMetadata(metadata) : undefined,
     };
+  }
+
+  /**
+   * Load a saved route and reconstruct it using Valhalla
+   * Simple approach: extract user waypoints and recalculate for map display
+   */
+  loadSavedRoute(routeResponse: RouteResponse, options: RouteOptions = {}): Observable<MultiWaypointRoute> {
+    // Extract user waypoints from saved route (no track points)
+    const userWaypoints: RoutePoint[] = routeResponse.points
+      .filter((point) => point.pointType !== PointType.TRACK_POINT)
+      .sort((a, b) => a.sequenceOrder - b.sequenceOrder)
+      .map((point) => ({
+        coordinates: { lat: point.latitude, lon: point.longitude },
+        type:
+          point.pointType === PointType.START_POINT
+            ? 'start'
+            : point.pointType === PointType.END_POINT
+              ? 'end'
+              : 'waypoint',
+        id: point.id,
+        name: point.name,
+        order: point.sequenceOrder,
+      }));
+
+    if (userWaypoints.length < 2) {
+      throw new Error('Insufficient waypoints to load route');
+    }
+
+    if (userWaypoints.length > 50) {
+      throw new Error(`Too many waypoints (${userWaypoints.length}). Maximum is 50 for Valhalla API.`);
+    }
+
+    // Recalculate route using Valhalla for fresh polyline data
+    return this.calculateMultiWaypointRoute(userWaypoints, options);
   }
 }

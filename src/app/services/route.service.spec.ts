@@ -1489,4 +1489,159 @@ describe('RouteService', () => {
       );
     });
   });
+
+  describe('loadSavedRoute', () => {
+    const mockEncodedPolyline = 'u{~vFvyys@fS]';
+
+    it('should validate waypoint count correctly', () => {
+      const mockRouteResponseValid: RouteResponse = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Route',
+        description: 'A test route',
+        routeType: RouteType.CYCLING,
+        isPublic: false,
+        totalDistance: 10000,
+        estimatedDuration: 3600,
+        createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        userId: 'user123',
+        points: [
+          {
+            id: 'point1',
+            sequenceOrder: 0,
+            latitude: 52.520008,
+            longitude: 13.404954,
+            pointType: PointType.START_POINT,
+            name: 'Start Point',
+          },
+          {
+            id: 'point2',
+            sequenceOrder: 1,
+            latitude: 52.516275,
+            longitude: 13.377704,
+            pointType: PointType.WAYPOINT,
+            name: 'Waypoint 1',
+          },
+          {
+            id: 'point3',
+            sequenceOrder: 2,
+            latitude: 52.512542,
+            longitude: 13.350454,
+            pointType: PointType.END_POINT,
+            name: 'End Point',
+          },
+        ],
+      };
+
+      // Should not throw for valid waypoint count (3 ≤ 50)
+      expect(() => service.loadSavedRoute(mockRouteResponseValid)).not.toThrow();
+    });
+
+    it('should validate that track points are filtered correctly', () => {
+      const mockRouteResponseWithTrackPoints: RouteResponse = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Route',
+        description: 'A test route',
+        routeType: RouteType.CYCLING,
+        isPublic: false,
+        totalDistance: 10000,
+        estimatedDuration: 3600,
+        createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        userId: 'user123',
+        points: [
+          {
+            id: 'point1',
+            sequenceOrder: 0,
+            latitude: 52.520008,
+            longitude: 13.404954,
+            pointType: PointType.START_POINT,
+            name: 'Start Point',
+          },
+          {
+            id: 'track1',
+            sequenceOrder: 1,
+            latitude: 52.518,
+            longitude: 13.391,
+            pointType: PointType.TRACK_POINT,
+          },
+          {
+            id: 'track2',
+            sequenceOrder: 2,
+            latitude: 52.516,
+            longitude: 13.384,
+            pointType: PointType.TRACK_POINT,
+          },
+          {
+            id: 'point2',
+            sequenceOrder: 3,
+            latitude: 52.512542,
+            longitude: 13.350454,
+            pointType: PointType.END_POINT,
+            name: 'End Point',
+          },
+        ],
+      };
+
+      // Should not throw even with track points (they get filtered out)
+      // Only 2 user waypoints (START_POINT, END_POINT) should be considered
+      expect(() => service.loadSavedRoute(mockRouteResponseWithTrackPoints)).not.toThrow();
+    });
+
+    it('should throw error when route has too many waypoints', () => {
+      const mockRouteResponseTooManyWaypoints: RouteResponse = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Route',
+        description: 'A test route',
+        routeType: RouteType.CYCLING,
+        isPublic: false,
+        totalDistance: 10000,
+        estimatedDuration: 3600,
+        createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        userId: 'user123',
+        points: Array.from({ length: 60 }, (_, i) => ({
+          id: `point${i}`,
+          sequenceOrder: i,
+          latitude: 52.520008 + i * 0.001,
+          longitude: 13.404954 + i * 0.001,
+          pointType: i === 0 ? PointType.START_POINT : i === 59 ? PointType.END_POINT : PointType.WAYPOINT,
+          name: `Waypoint ${i}`,
+        })),
+      };
+
+      expect(() => {
+        service.loadSavedRoute(mockRouteResponseTooManyWaypoints).subscribe();
+      }).toThrow('Too many waypoints (60). Maximum is 50 for Valhalla API.');
+    });
+
+    it('should throw error when route has insufficient waypoints', () => {
+      const mockRouteResponseOneWaypoint: RouteResponse = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Route',
+        description: 'A test route',
+        routeType: RouteType.CYCLING,
+        isPublic: false,
+        totalDistance: 10000,
+        estimatedDuration: 3600,
+        createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
+        userId: 'user123',
+        points: [
+          {
+            id: 'point1',
+            sequenceOrder: 0,
+            latitude: 52.520008,
+            longitude: 13.404954,
+            pointType: PointType.START_POINT,
+            name: 'Start Point',
+          },
+        ],
+      };
+
+      expect(() => {
+        service.loadSavedRoute(mockRouteResponseOneWaypoint).subscribe();
+      }).toThrow('Insufficient waypoints to load route');
+    });
+  });
 });

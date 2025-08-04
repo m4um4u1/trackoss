@@ -45,7 +45,7 @@ export interface RouteResult {
 }
 
 export interface MultiWaypointRoute {
-  waypoints: RoutePoint[];
+  waypoints: RoutePoint[]; // User-defined waypoints only
   routeData: RouteData;
   totalDistance?: number;
   totalDuration?: number;
