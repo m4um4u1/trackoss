@@ -40,7 +40,6 @@ export class SaveRouteModalComponent implements OnInit {
   @Output() modalClosed = new EventEmitter<void>();
   @Output() routeSaved = new EventEmitter<void>();
 
-  // Modern Angular 20 dependency injection
   private readonly routeService = inject(RouteService);
 
   // Signal-based form data
@@ -244,7 +243,7 @@ export class SaveRouteModalComponent implements OnInit {
     return this._bestSeason().includes(season);
   }
 
-  async saveRoute(): Promise<void> {
+  saveRoute(): void {
     if (!this.isFormValid()) {
       this._errorMessage.set('Route name is required');
       return;
@@ -259,54 +258,57 @@ export class SaveRouteModalComponent implements OnInit {
     this._errorMessage.set('');
     this._successMessage.set('');
 
-    try {
-      const metadata: RouteMetadata = {
-        surface: this._surfaceType(),
-        terrain: this._terrain(),
-        difficulty: this._difficulty(),
-        scenicRating: this._scenicRating(),
-        safetyRating: this._safetyRating(),
-        trafficLevel: this._trafficLevel(),
-        technicalDifficulty: this._technicalDifficulty(),
-        bestTimeOfDay: this._bestTimeOfDay().length > 0 ? this._bestTimeOfDay() : undefined,
-        bestSeason: this._bestSeason().length > 0 ? this._bestSeason() : undefined,
-        notes: this._notes().trim() || undefined,
-        tags: this.processedTags().length > 0 ? this.processedTags() : undefined,
-      };
+    const metadata: RouteMetadata = {
+      surface: this._surfaceType(),
+      terrain: this._terrain(),
+      difficulty: this._difficulty(),
+      scenicRating: this._scenicRating(),
+      safetyRating: this._safetyRating(),
+      trafficLevel: this._trafficLevel(),
+      technicalDifficulty: this._technicalDifficulty(),
+      bestTimeOfDay: this._bestTimeOfDay().length > 0 ? this._bestTimeOfDay() : undefined,
+      bestSeason: this._bestSeason().length > 0 ? this._bestSeason() : undefined,
+      notes: this._notes().trim() || undefined,
+      tags: this.processedTags().length > 0 ? this.processedTags() : undefined,
+    };
 
-      if (this.multiWaypointRoute) {
-        this.routeService.saveMultiWaypointRoute(
+    const saveObservable = this.multiWaypointRoute
+      ? this.routeService.saveMultiWaypointRoute(
           this.multiWaypointRoute,
           this._routeName().trim(),
           this._routeDescription().trim() || undefined,
           this._routeType(),
           this._isPublic(),
           metadata,
-        );
-      } else if (this.routeResult) {
-        this.routeService.saveRoute(
-          this.routeResult,
+        )
+      : this.routeService.saveRoute(
+          this.routeResult!,
           this._routeName().trim(),
           this._routeDescription().trim() || undefined,
           this._routeType(),
           this._isPublic(),
           metadata,
         );
-      }
 
-      this._successMessage.set('Route saved successfully!');
-      this.routeSaved.emit();
+    saveObservable.subscribe({
+      next: (response) => {
+        console.log('Route saved successfully:', response);
+        this._successMessage.set('Route saved successfully!');
+        this.routeSaved.emit();
 
-      // Close modal after a short delay to show success message
-      setTimeout(() => {
-        this.closeModal();
-      }, 1500);
-    } catch (error) {
-      console.error('Error saving route:', error);
-      this._errorMessage.set('Failed to save route. Please try again.');
-    } finally {
-      this._isSaving.set(false);
-    }
+        // Close modal after a short delay to show success message
+        setTimeout(() => {
+          this.closeModal();
+        }, 1500);
+      },
+      error: (error) => {
+        console.error('Error saving route:', error);
+        this._errorMessage.set(error.message || 'Failed to save route. Please try again.');
+      },
+      complete: () => {
+        this._isSaving.set(false);
+      },
+    });
   }
 
   closeModal(): void {
