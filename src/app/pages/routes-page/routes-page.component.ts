@@ -7,11 +7,12 @@ import { BackendApiService } from '../../services/backend-api.service';
 import { PageResponse, RouteResponse } from '../../models/backend-api';
 import { RouteFilters, RouteFiltersComponent } from '../../components/route-filters/route-filters.component';
 import { RouteCardComponent } from '../../components/route-card/route-card.component';
+import { ConfirmationDialogComponent } from '../../components/confirmation-dialog/confirmation-dialog.component';
 
 @Component({
   selector: 'app-routes-page',
   standalone: true,
-  imports: [CommonModule, RouteFiltersComponent, RouteCardComponent],
+  imports: [CommonModule, RouteFiltersComponent, RouteCardComponent, ConfirmationDialogComponent],
   templateUrl: './routes-page.component.html',
   styleUrl: './routes-page.component.scss',
 })
@@ -27,6 +28,9 @@ export class RoutesPageComponent implements OnInit {
   totalPages = signal(0);
   totalElements = signal(0);
   pageSize = signal(12);
+  deleteError = signal<string | null>(null);
+  showDeleteConfirmation = signal(false);
+  routeToDelete = signal<string | null>(null);
 
   // Current filters
   currentFilters = signal<RouteFilters>({
@@ -61,15 +65,52 @@ export class RoutesPageComponent implements OnInit {
     this.loadRoutes();
   }
 
-  onRouteSelected(route: RouteResponse) {
-    // Navigate to map with route details
-    // For now, just log the selection
-    console.log('Route selected:', route);
-  }
-
   onRouteViewed(routeId: string) {
     // Navigate to map page with the specific route
     this.router.navigate(['/map'], { queryParams: { routeId } });
+  }
+
+  onRouteDeleted(routeId: string) {
+    this.routeToDelete.set(routeId);
+    this.showDeleteConfirmation.set(true);
+  }
+
+  confirmDelete() {
+    const routeId = this.routeToDelete();
+    if (!routeId) return;
+
+    this.loading.set(true);
+    this.deleteError.set(null);
+    this.showDeleteConfirmation.set(false);
+
+    this.backendApiService.deleteRoute(routeId).subscribe({
+      next: () => {
+        // Remove the deleted route from the list
+        this.routes.set(this.routes().filter((route) => route.id !== routeId));
+        this.totalElements.set(this.totalElements() - 1);
+        this.routeToDelete.set(null);
+
+        // If we deleted the last route on the page, go back one page
+        if (this.routes().length === 0 && this.currentPage() > 0) {
+          this.currentPage.set(this.currentPage() - 1);
+          this.loadRoutes();
+        }
+      },
+      error: (error) => {
+        console.error('Error deleting route:', error);
+        this.deleteError.set('Failed to delete route. Please try again.');
+        this.loading.set(false);
+        this.routeToDelete.set(null);
+      },
+      complete: () => {
+        this.loading.set(false);
+      },
+    });
+  }
+
+  cancelDelete() {
+    this.showDeleteConfirmation.set(false);
+    this.routeToDelete.set(null);
   }
 
   loadRoutes() {

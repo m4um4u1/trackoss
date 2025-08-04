@@ -50,6 +50,7 @@ describe('RoutesPageComponent', () => {
     const backendApiServiceSpy = {
       getPublicRoutes: jest.fn().mockReturnValue(of(mockPageResponse)),
       getRoutes: jest.fn().mockReturnValue(of(mockPageResponse)),
+      deleteRoute: jest.fn().mockReturnValue(of(void 0)),
     };
 
     const routerSpy = {
@@ -201,15 +202,6 @@ describe('RoutesPageComponent', () => {
     component.onRouteViewed(routeId);
 
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/map'], { queryParams: { routeId } });
-  });
-
-  it('should log route selection', () => {
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
-    component.onRouteSelected(mockRoute);
-
-    expect(consoleSpy).toHaveBeenCalledWith('Route selected:', mockRoute);
-    consoleSpy.mockRestore();
   });
 
   it('should change page correctly', () => {
@@ -413,6 +405,99 @@ describe('RoutesPageComponent', () => {
       minDistance: 5000, // Converted to meters
       maxDistance: 20000, // Converted to meters
       surfaceType: 'gravel',
+    });
+  });
+
+  describe('Route Deletion', () => {
+    it('should show confirmation dialog when route deletion is requested', () => {
+      component.onRouteDeleted('route-1');
+
+      expect(component.showDeleteConfirmation()).toBe(true);
+      expect(component.routeToDelete()).toBe('route-1');
+    });
+
+    it('should delete route and update state when confirmed', () => {
+      // Set up initial state
+      component.routes.set([mockRoute, { ...mockRoute, id: 'route-2' }]);
+      component.totalElements.set(2);
+      component.currentPage.set(0);
+
+      // Mock the delete API call
+      mockBackendApiService.deleteRoute.mockReturnValue(of(void 0));
+
+      // Trigger deletion
+      component.onRouteDeleted('route-1');
+      component.confirmDelete();
+
+      // Verify API call
+      expect(mockBackendApiService.deleteRoute).toHaveBeenCalledWith('route-1');
+
+      // Verify state updates
+      expect(component.routes()).toEqual([{ ...mockRoute, id: 'route-2' }]);
+      expect(component.totalElements()).toBe(1);
+      expect(component.routeToDelete()).toBeNull();
+      expect(component.showDeleteConfirmation()).toBe(false);
+      expect(component.loading()).toBe(false);
+    });
+
+    it('should handle deletion error', () => {
+      // Set up initial state
+      component.routes.set([mockRoute]);
+
+      // Mock the delete API call to fail
+      mockBackendApiService.deleteRoute.mockReturnValue(throwError(() => new Error('Delete failed')));
+
+      // Trigger deletion
+      component.onRouteDeleted('route-1');
+      component.confirmDelete();
+
+      // Verify API call
+      expect(mockBackendApiService.deleteRoute).toHaveBeenCalledWith('route-1');
+
+      // Verify error handling
+      expect(component.deleteError()).toBe('Failed to delete route. Please try again.');
+      expect(component.routes()).toEqual([mockRoute]); // Routes should remain unchanged
+      expect(component.loading()).toBe(false);
+    });
+
+    it('should cancel deletion when cancelled', () => {
+      component.onRouteDeleted('route-1');
+      component.cancelDelete();
+
+      expect(component.showDeleteConfirmation()).toBe(false);
+      expect(component.routeToDelete()).toBeNull();
+      expect(mockBackendApiService.deleteRoute).not.toHaveBeenCalled();
+    });
+
+    it('should go back one page if last route on page is deleted', () => {
+      // Set up initial state with one route on page 1
+      component.routes.set([mockRoute]);
+      component.totalElements.set(1);
+      component.currentPage.set(1);
+
+      // Mock the delete API call
+      mockBackendApiService.deleteRoute.mockReturnValue(of(void 0));
+
+      // Trigger deletion
+      component.onRouteDeleted('route-1');
+      component.confirmDelete();
+
+      // Verify API call
+      expect(mockBackendApiService.deleteRoute).toHaveBeenCalledWith('route-1');
+
+      // Verify page change and reload
+      expect(component.currentPage()).toBe(0);
+      expect(mockBackendApiService.getRoutes).toHaveBeenCalledWith({
+        page: 0,
+        size: 12,
+        search: undefined,
+        routeType: undefined,
+        difficulty: undefined,
+        minDistance: undefined,
+        maxDistance: 100000,
+        surfaceType: undefined,
+        sort: 'createdAt,desc',
+      });
     });
   });
 });

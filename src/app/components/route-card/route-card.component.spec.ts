@@ -246,22 +246,6 @@ describe('RouteCardComponent', () => {
     });
   });
 
-  it('should emit routeSelected when card is clicked', () => {
-    jest.spyOn(component.routeSelected, 'emit');
-
-    component.onCardClick();
-
-    expect(component.routeSelected.emit).toHaveBeenCalledWith(mockRoute);
-  });
-
-  it('should emit routeViewed when view route is called', () => {
-    jest.spyOn(component.routeViewed, 'emit');
-
-    component.onViewRoute();
-
-    expect(component.routeViewed.emit).toHaveBeenCalledWith('route-1');
-  });
-
   it('should format route type correctly', () => {
     expect(component.formatRouteType(RouteType.MOUNTAIN_BIKING)).toBe('Mountain Biking');
     expect(component.formatRouteType(RouteType.ROAD_CYCLING)).toBe('Road Cycling');
@@ -308,5 +292,21 @@ describe('RouteCardComponent', () => {
     expect(component.routeTypeColor).toBe('secondary');
     expect(component.surfaceTypeDisplay).toBe('');
     expect(component.difficultyStars).toEqual([1, 0, 0, 0, 0]);
+  });
+
+  it('should emit routeDeleted when delete is called', () => {
+    jest.spyOn(component.routeDeleted, 'emit');
+
+    component.onDeleteRoute();
+
+    expect(component.routeDeleted.emit).toHaveBeenCalledWith('route-1');
+  });
+
+  it('should render delete button with correct icon and styling', () => {
+    fixture.detectChanges();
+    const deleteButton = fixture.nativeElement.querySelector('button[title="Delete route"]');
+    expect(deleteButton).toBeTruthy();
+    expect(deleteButton.classList).toContain('btn-danger');
+    expect(deleteButton.querySelector('i.bi-trash')).toBeTruthy();
   });
 });

@@ -1501,10 +1501,12 @@ describe('RouteService', () => {
         routeType: RouteType.CYCLING,
         isPublic: false,
         totalDistance: 10000,
+        totalElevationGain: 1000,
         estimatedDuration: 3600,
         createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
         updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
         userId: 'user123',
+        pointCount: 3,
         points: [
           {
             id: 'point1',
@@ -1545,10 +1547,12 @@ describe('RouteService', () => {
         routeType: RouteType.CYCLING,
         isPublic: false,
         totalDistance: 10000,
+        totalElevationGain: 1000,
         estimatedDuration: 3600,
         createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
         updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
         userId: 'user123',
+        pointCount: 3,
         points: [
           {
             id: 'point1',
@@ -1595,11 +1599,13 @@ describe('RouteService', () => {
         description: 'A test route',
         routeType: RouteType.CYCLING,
         isPublic: false,
+        totalElevationGain: 1000,
         totalDistance: 10000,
         estimatedDuration: 3600,
         createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
         updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
         userId: 'user123',
+        pointCount: 60,
         points: Array.from({ length: 60 }, (_, i) => ({
           id: `point${i}`,
           sequenceOrder: i,
@@ -1623,10 +1629,12 @@ describe('RouteService', () => {
         routeType: RouteType.CYCLING,
         isPublic: false,
         totalDistance: 10000,
+        totalElevationGain: 1000,
         estimatedDuration: 3600,
         createdAt: [2025, 8, 3, 3, 14, 3, 610109000],
         updatedAt: [2025, 8, 3, 3, 14, 3, 610109000],
         userId: 'user123',
+        pointCount: 1,
         points: [
           {
             id: 'point1',
