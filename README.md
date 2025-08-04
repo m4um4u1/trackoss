@@ -26,7 +26,7 @@ You will need to set up and run the corresponding backend service. Detailed inst
 
 The frontend application is configured to connect to this backend service. The URLs are defined in:
 
-- `src/environments/environments.ts` for development (defaults to `http://localhost:8080/api/map-proxy`)
+- `src/environments/environments.ts` for development (defaults to `http://localhost:8080`)
 - `src/environments/environment.prod.ts` for production (defaults to `/api/map-proxy`, assuming same-domain deployment or reverse proxy setup)
 
 If your backend runs on a different URL during development or in production, you'll need to update these configuration files accordingly. For example, to change the development backend URL:
@@ -79,36 +79,6 @@ To execute unit tests with the [Karma](https://karma-runner.github.io) test runn
 ng test
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing with Playwright (local development only), run:
-
-```bash
-npm run e2e
-```
-
-**Additional E2E commands:**
-
-```bash
-npm run e2e:headed    # Run with browser UI visible
-npm run e2e:ui        # Run with Playwright UI for debugging
-npm run e2e:install   # Install Playwright browsers
-```
-
-**Note:** E2E tests require local backend services (map proxy and Valhalla routing service) to be running. These tests are not included in the CI/CD pipeline as they depend on locally hosted services.
-
-For debugging with headed browser:
-
-```bash
-npm run e2e:headed
-```
-
-For interactive UI mode:
-
-```bash
-npm run e2e:ui
-```
-
 ## Docker
 
 ### Building the Docker image
@@ -140,9 +110,9 @@ The Docker image supports runtime configuration using environment variables:
 
 #### Environment Variables
 
-- **`MAP_TILE_PROXY_BASE_URL`**: URL for the map tile proxy service
+- **`BASE_URL`**: URL for the map tile proxy service
   - Default: `/api/map-proxy`
-  - Example: `http://backend:8080/api/map-proxy`
+  - Example: `http://backend:8080`
 
 - **`VALHALLA_URL`**: URL for the Valhalla routing service
   - Default: `/api/valhalla`
@@ -154,7 +124,7 @@ The Docker image supports runtime configuration using environment variables:
 
 ```bash
 docker run -p 8080:80 \
-  -e MAP_TILE_PROXY_BASE_URL="http://my-backend:8080/api/map-proxy" \
+  -e BASE_URL="http://my-backend:8080" \
   -e VALHALLA_URL="http://my-valhalla:8002" \
   ghcr.io/m4um4u1/trackoss:latest
 ```
@@ -168,7 +138,7 @@ services:
     ports:
       - '8080:80'
     environment:
-      MAP_TILE_PROXY_BASE_URL: 'http://backend:8080/api/map-proxy'
+      BASE_URL: 'http://backend:8080'
       VALHALLA_URL: 'http://valhalla:8002'
 ```
 
@@ -176,7 +146,7 @@ services:
 
 ```bash
 docker run -p 8080:80 \
-  -e MAP_TILE_PROXY_BASE_URL="/api/map-proxy" \
+  -e BASE_URL="/api/map-proxy" \
   -e VALHALLA_URL="/api/valhalla" \
   ghcr.io/m4um4u1/trackoss:latest
 ```
