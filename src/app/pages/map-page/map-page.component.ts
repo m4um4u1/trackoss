@@ -47,10 +47,10 @@ export class MapPageComponent implements OnInit, OnDestroy {
     // Get routeId from query parameters
     const routeId = this.route.snapshot.queryParamMap.get('routeId');
     if (routeId) {
+      // Load route from backend and reconstruct with Valhalla for map display
       this.backendApiService.getRoute(routeId).subscribe({
         next: (routeResponse) => {
-          // Convert route response to waypoints and set them
-          this.convertRouteResponseToWaypoints(routeResponse);
+          this.loadAndDisplayRoute(routeResponse);
         },
         error: (error) => {
           console.error('Error loading route:', error);
@@ -59,27 +59,38 @@ export class MapPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private convertRouteResponseToWaypoints(routeResponse: RouteResponse): void {
-    // Extract coordinates from route points
-    const waypoints: RoutePoint[] = routeResponse.points.map((point, index) => {
-      let type: 'start' | 'waypoint' | 'end' = 'waypoint';
-      if (index === 0) {
-        type = 'start';
-      } else if (index === routeResponse.points.length - 1) {
-        type = 'end';
-      }
-
-      return {
-        coordinates: { lat: point.latitude, lon: point.longitude },
-        type: type,
-        id: `waypoint-${point.id || index}`,
-        order: index,
-        name: point.name || `${type.charAt(0).toUpperCase() + type.slice(1)} Point`,
-      };
+  private loadAndDisplayRoute(routeResponse: RouteResponse): void {
+    // Use the simplified route loading method
+    this.routeService.loadSavedRoute(routeResponse).subscribe({
+      next: (multiWaypointRoute) => {
+        // Set the reconstructed route for display
+        this.routeService['_currentMultiWaypointRoute'].set(multiWaypointRoute);
+        this.currentWaypoints = multiWaypointRoute.waypoints;
+        console.log(`Route loaded with ${multiWaypointRoute.waypoints.length} waypoints`);
+      },
+      error: (error) => {
+        console.error('Error reconstructing route:', error);
+        // Fallback: just show the waypoints without the route line
+        this.showWaypointsOnly(routeResponse);
+      },
     });
+  }
 
-    // Set waypoints to trigger map update
+  private showWaypointsOnly(routeResponse: RouteResponse): void {
+    // Extract and display just the user waypoints
+    const waypoints: RoutePoint[] = routeResponse.points
+      .filter((point) => point.pointType !== 'TRACK_POINT')
+      .sort((a, b) => a.sequenceOrder - b.sequenceOrder)
+      .map((point) => ({
+        coordinates: { lat: point.latitude, lon: point.longitude },
+        type: point.pointType === 'START_POINT' ? 'start' : point.pointType === 'END_POINT' ? 'end' : 'waypoint',
+        id: point.id,
+        name: point.name || `Waypoint ${point.sequenceOrder + 1}`,
+        order: point.sequenceOrder,
+      }));
+
     this.currentWaypoints = waypoints;
+    console.log('Showing waypoints only (route line unavailable)');
   }
 
   ngOnDestroy(): void {

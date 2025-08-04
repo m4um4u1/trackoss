@@ -321,19 +321,19 @@ export class SaveRouteModalComponent implements OnInit {
     this._routeDescription.set('');
     this._routeType.set(RouteType.CYCLING);
     this._isPublic.set(false);
-    this._difficulty.set(3);
-    this._scenicRating.set(3);
-    this._safetyRating.set(3);
+    this._difficulty.set(1);
+    this._scenicRating.set(1);
+    this._safetyRating.set(1);
     this._surfaceType.set(SurfaceType.MIXED);
-    this._trafficLevel.set(TrafficLevel.MEDIUM);
-    this._technicalDifficulty.set(TechnicalDifficulty.INTERMEDIATE);
-    this._terrain.set(TerrainType.MIXED);
+    this._terrain.set(TerrainType.FLAT);
+    this._trafficLevel.set(TrafficLevel.LOW);
+    this._technicalDifficulty.set(TechnicalDifficulty.BEGINNER);
     this._bestTimeOfDay.set([]);
     this._bestSeason.set([]);
     this._notes.set('');
     this._tags.set('');
-    this._errorMessage.set('');
-    this._successMessage.set('');
+    this._errorMessage.set(null);
+    this._successMessage.set(null);
     this._isSaving.set(false);
   }
 
