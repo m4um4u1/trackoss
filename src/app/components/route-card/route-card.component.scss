@@ -91,16 +91,27 @@
   .card-footer {
     padding: 0.75rem 1rem;
 
-    .btn-outline-primary {
-      border-color: var(--bs-primary);
-      color: var(--bs-primary);
+    .btn {
       font-size: 0.875rem;
       padding: 0.375rem 0.75rem;
 
-      &:hover {
-        background-color: var(--bs-primary);
+      &.btn-outline-primary {
         border-color: var(--bs-primary);
-        color: white;
+        color: var(--bs-primary);
+
+        &:hover {
+          background-color: var(--bs-primary);
+          border-color: var(--bs-primary);
+          color: white;
+        }
+      }
+
+      &.btn-danger {
+        padding: 0.375rem 0.75rem;
+
+        i {
+          font-size: 1rem;
+        }
       }
     }
 
@@ -141,6 +152,11 @@
 
       .btn {
         width: 100%;
+        margin-bottom: 0.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
       }
 
       .route-stats {

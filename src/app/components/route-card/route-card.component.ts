@@ -13,8 +13,8 @@ import { RouteMetadata } from '../../models/route-metadata';
 })
 export class RouteCardComponent {
   @Input({ required: true }) route!: RouteResponse;
-  @Output() routeSelected = new EventEmitter<RouteResponse>();
   @Output() routeViewed = new EventEmitter<string>();
+  @Output() routeDeleted = new EventEmitter<string>();
 
   // Expose enums to template
   RouteType = RouteType;
@@ -158,12 +158,12 @@ export class RouteCardComponent {
     return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
   }
 
-  onCardClick() {
-    this.routeSelected.emit(this.route);
-  }
-
   onViewRoute() {
     this.routeViewed.emit(this.route.id);
+  }
+
+  onDeleteRoute() {
+    this.routeDeleted.emit(this.route.id);
   }
 
   formatRouteType(routeType: RouteType): string {
