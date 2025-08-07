@@ -29,6 +29,10 @@
       font-weight: 600;
     }
 
+    .btn-group .btn + .btn {
+      margin-left: 0.25rem;
+    }
+
     .form-check-input:checked {
       background-color: #28a745;
       border-color: #28a745;
@@ -140,6 +144,36 @@
     .btn:hover:not(:disabled) {
       transform: translateY(-1px);
     }
+  }
+
+  // Drag-and-drop visual cues
+  .cdk-drop-list {
+    display: block;
+  }
+
+  .cdk-drag-preview {
+    box-sizing: border-box;
+    border-radius: 0.375rem;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  }
+
+  .cdk-drag-placeholder {
+    opacity: 0;
+  }
+
+  .cdk-drag-animating {
+    transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .waypoint-item.cdk-drag {
+    cursor: grab;
+  }
+  .waypoint-item.cdk-drag:active {
+    cursor: grabbing;
+  }
+
+  .waypoint-edit-input {
+    min-width: 200px;
   }
 
   .alert {

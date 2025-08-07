@@ -1,0 +1,21 @@
+// Main app layout
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+// Navbar area - fixed at top
+app-navbar {
+  flex-shrink: 0;
+  z-index: 1030; // Above most other content but below modals
+}
+
+// Content area wrapper - takes remaining space and is scrollable
+.content-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}

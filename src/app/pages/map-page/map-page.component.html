@@ -1,49 +1,30 @@
-<div
-  [class.desktop-mode]="!isMobile && !isTablet"
-  [class.mobile-mode]="isMobile"
-  [class.sidepanel-closed]="!isSidepanelOpen"
-  [class.sidepanel-open]="isSidepanelOpen"
-  [class.tablet-mode]="isTablet"
-  class="position-relative vh-100 overflow-hidden"
->
-  <!-- Toggle Button (Mobile and Desktop) -->
+<div [class]="layout.rootClasses()">
+  <!-- Toggle Button -->
   <button
     (click)="toggleSidepanel()"
-    [attr.aria-expanded]="isSidepanelOpen"
-    [attr.aria-label]="isSidepanelOpen ? 'Close sidepanel' : 'Open sidepanel'"
-    [class.desktop-toggle]="!isMobile"
-    [class.mobile-toggle]="isMobile"
-    class="btn btn-light shadow-sm d-flex align-items-center justify-content-center toggle-btn"
+    [attr.aria-expanded]="layout.isSidepanelOpen()"
+    [attr.aria-label]="layout.isSidepanelOpen() ? 'Close sidepanel' : 'Open sidepanel'"
+    [class]="layout.toggleButtonClasses()"
+    class="btn btn-light shadow-sm d-flex align-items-center justify-content-center"
     title="Toggle sidepanel"
   >
     <i class="bi bi-layout-split"></i>
   </button>
 
   <!-- Backdrop for mobile only -->
-  @if (isMobile && isSidepanelOpen) {
+  @if (responsive.isMobile() && layout.isSidepanelOpen()) {
     <div (click)="onBackdropClick()" class="backdrop"></div>
   }
 
   <div class="container-fluid h-100 p-0">
     <div class="row g-0 h-100 d-flex">
       <!-- Sidepanel -->
-      <div
-        (touchstart)="onSidepanelTouchStart($event)"
-        (touchmove)="onSidepanelTouchMove($event)"
-        [ngClass]="sidepanelClasses()"
-        class="sidepanel-container"
-      >
-        <app-map-sidepanel
-          (multiWaypointRouteCalculated)="onMultiWaypointRouteCalculated($event)"
-          (routeCalculated)="onRouteCalculated($event)"
-          (routePointsReady)="onRoutePointsUpdated($event)"
-          (waypointsChanged)="onWaypointsChanged($event)"
-          [waypoints]="currentWaypoints"
-        />
+      <div appMobileTouchScroll [class]="layout.sidepanelClasses()" class="sidepanel-container">
+        <app-sidepanel [waypoints]="currentWaypoints" (waypointsChanged)="onWaypointsChanged($event)" />
       </div>
 
       <!-- Map Container -->
-      <div [ngClass]="mapClasses()" class="map-container">
+      <div [class]="layout.mapClasses()" class="map-container">
         <app-libre-map
           (waypointsChanged)="onWaypointsChanged($event)"
           (startPointChanged)="onStartPointChanged($event)"

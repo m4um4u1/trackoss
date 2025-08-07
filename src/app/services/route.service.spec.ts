@@ -5,7 +5,7 @@ import { RouteService } from './route.service';
 import { ConfigService } from './config.service';
 import { BackendApiService } from './backend-api.service';
 import { Coordinates } from '../models/coordinates';
-import { RouteOptions, RoutePoint } from '../models/route';
+import { MultiWaypointRoute, RouteOptions, RoutePoint } from '../models/route';
 import { environment } from '../../environments/environments';
 import { of } from 'rxjs';
 import { PointType, RouteResponse, RouteType } from '../models/backend-api';
@@ -1491,8 +1491,6 @@ describe('RouteService', () => {
   });
 
   describe('loadSavedRoute', () => {
-    const mockEncodedPolyline = 'u{~vFvyys@fS]';
-
     it('should validate waypoint count correctly', () => {
       const mockRouteResponseValid: RouteResponse = {
         id: '123e4567-e89b-12d3-a456-426614174000',
@@ -1621,7 +1619,7 @@ describe('RouteService', () => {
       }).toThrow('Too many waypoints (60). Maximum is 50 for Valhalla API.');
     });
 
-    it('should throw error when route has insufficient waypoints', () => {
+    it('should handle route with single waypoint (return simplified route)', () => {
       const mockRouteResponseOneWaypoint: RouteResponse = {
         id: '123e4567-e89b-12d3-a456-426614174000',
         name: 'Test Route',
@@ -1647,9 +1645,18 @@ describe('RouteService', () => {
         ],
       };
 
-      expect(() => {
-        service.loadSavedRoute(mockRouteResponseOneWaypoint).subscribe();
-      }).toThrow('Insufficient waypoints to load route');
+      let result: MultiWaypointRoute | null = null;
+      service.loadSavedRoute(mockRouteResponseOneWaypoint).subscribe({
+        next: (route) => {
+          result = route;
+        },
+      });
+
+      expect(result).toBeTruthy();
+      expect(result?.waypoints).toHaveLength(1);
+      expect(result?.waypoints[0].name).toBe('Start Point');
+      expect(result?.totalDistance).toBe(0); // No route line for single waypoint
+      expect(result?.totalDuration).toBe(0);
     });
   });
 });

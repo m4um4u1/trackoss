@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, EventEmitter, Input, Output, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 import { MultiWaypointRoute, RoutePoint } from '../../models/route';
 import { Coordinates } from '../../models/coordinates';
@@ -8,7 +10,7 @@ import { Coordinates } from '../../models/coordinates';
 @Component({
   selector: 'app-waypoint-manager',
   standalone: true,
-  imports: [FormsModule],
+  imports: [CommonModule, FormsModule, DragDropModule],
   templateUrl: './waypoint-manager.component.html',
   styleUrls: ['./waypoint-manager.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,10 +36,16 @@ export class WaypointManagerComponent {
   // Signal-based internal state management
   private readonly _newWaypointText = signal('');
   private readonly _isAddingWaypoint = signal(false);
+  private readonly _editingId = signal<string | null>(null);
+  private readonly _editingName = signal('');
+  private readonly _pendingInsertIndex = signal<number | null>(null);
 
   // Public readonly signals
   readonly newWaypointText = this._newWaypointText.asReadonly();
   readonly isAddingWaypoint = this._isAddingWaypoint.asReadonly();
+  readonly editingId = this._editingId.asReadonly();
+  readonly editingName = this._editingName.asReadonly();
+  readonly pendingInsertIndex = this._pendingInsertIndex.asReadonly();
 
   // Computed signals for derived state
   readonly hasWaypoints = computed(() => this._waypoints().length > 0);
@@ -56,6 +64,49 @@ export class WaypointManagerComponent {
   // Methods to update signals from template
   updateNewWaypointText(value: string): void {
     this._newWaypointText.set(value);
+  }
+
+  /** Start inline editing for a waypoint */
+  startEditing(waypoint: RoutePoint): void {
+    this._editingId.set(waypoint.id ?? null);
+    this._editingName.set(waypoint.name ?? '');
+  }
+
+  /** Commit inline edit */
+  commitEdit(waypoint: RoutePoint): void {
+    const name = this._editingName().trim();
+    if (this._editingId() && name.length >= 0) {
+      const updated = this._waypoints().map((wp) => (wp.id === waypoint.id ? { ...wp, name } : wp));
+      this._waypoints.set(updated);
+      this.waypointsChanged.emit([...updated]);
+    }
+    this._editingId.set(null);
+    this._editingName.set('');
+  }
+
+  /** Cancel inline edit */
+  cancelEdit(): void {
+    this._editingId.set(null);
+    this._editingName.set('');
+  }
+
+  /** Update editing name from template */
+  onEditingNameChange(value: string): void {
+    this._editingName.set(value);
+  }
+
+  /** Handle drag and drop reordering */
+  drop(event: CdkDragDrop<RoutePoint[]>): void {
+    const arr = [...this._waypoints()];
+    moveItemInArray(arr, event.previousIndex, event.currentIndex);
+    this.updateWaypointOrdersInArray(arr);
+    this._waypoints.set(arr);
+    this.waypointsChanged.emit([...arr]);
+  }
+
+  /** Mark a segment to insert the next waypoint at index */
+  requestInsertAt(index: number): void {
+    this._pendingInsertIndex.set(index);
   }
 
   /**
@@ -80,19 +131,26 @@ export class WaypointManagerComponent {
           order: updatedWaypoints.length,
         };
 
-        // If this is the second waypoint, make it the end point
-        if (updatedWaypoints.length === 1) {
-          newWaypoint.type = 'end';
-        } else if (updatedWaypoints.length > 1) {
-          // Update the previous end point to be a waypoint
-          const lastWaypoint = updatedWaypoints[updatedWaypoints.length - 1];
-          if (lastWaypoint.type === 'end') {
-            lastWaypoint.type = 'waypoint';
+        const insertIndex = this._pendingInsertIndex();
+        if (insertIndex !== null) {
+          // Insert at requested position between legs
+          updatedWaypoints.splice(insertIndex, 0, newWaypoint);
+          this.updateWaypointOrdersInArray(updatedWaypoints);
+          this._pendingInsertIndex.set(null);
+        } else {
+          // Append logic with end reassignment
+          if (updatedWaypoints.length === 1) {
+            newWaypoint.type = 'end';
+          } else if (updatedWaypoints.length > 1) {
+            // Update the previous end point to be a waypoint
+            const lastWaypoint = updatedWaypoints[updatedWaypoints.length - 1];
+            if (lastWaypoint.type === 'end') {
+              lastWaypoint.type = 'waypoint';
+            }
+            newWaypoint.type = 'end';
           }
-          newWaypoint.type = 'end';
+          updatedWaypoints.push(newWaypoint);
         }
-
-        updatedWaypoints.push(newWaypoint);
 
         // Update internal signal immediately
         this._waypoints.set([...updatedWaypoints]);
@@ -147,9 +205,15 @@ export class WaypointManagerComponent {
     this.waypointsCleared.emit();
   }
 
-  /**
-   * Move waypoint up in the order
-   */
+  /** Reverse the order of waypoints */
+  reverseWaypoints(): void {
+    const arr = [...this._waypoints()].reverse();
+    this.updateWaypointOrdersInArray(arr);
+    this._waypoints.set(arr);
+    this.waypointsChanged.emit([...arr]);
+  }
+
+  /** Move waypoint up in the order (fallback for non-drag environments) */
   moveWaypointUp(index: number): void {
     if (index > 0) {
       const waypoints = [...this._waypoints()];
@@ -165,9 +229,7 @@ export class WaypointManagerComponent {
     }
   }
 
-  /**
-   * Move waypoint down in the order
-   */
+  /** Move waypoint down in the order (fallback for non-drag environments) */
   moveWaypointDown(index: number): void {
     if (index < this._waypoints().length - 1) {
       const waypoints = [...this._waypoints()];
@@ -181,6 +243,25 @@ export class WaypointManagerComponent {
 
       this.waypointsChanged.emit([...waypoints]);
     }
+  }
+
+  /** Quick actions to set a waypoint as start or end */
+  setAsStart(index: number): void {
+    const arr = [...this._waypoints()];
+    const [wp] = arr.splice(index, 1);
+    arr.unshift(wp);
+    this.updateWaypointOrdersInArray(arr);
+    this._waypoints.set(arr);
+    this.waypointsChanged.emit([...arr]);
+  }
+
+  setAsEnd(index: number): void {
+    const arr = [...this._waypoints()];
+    const [wp] = arr.splice(index, 1);
+    arr.push(wp);
+    this.updateWaypointOrdersInArray(arr);
+    this._waypoints.set(arr);
+    this.waypointsChanged.emit([...arr]);
   }
 
   /**
@@ -256,15 +337,6 @@ export class WaypointManagerComponent {
       distance: leg.distance || 0,
       duration: leg.duration || 0,
     };
-  }
-
-  /**
-   * Update waypoint orders and types after reordering
-   */
-  private updateWaypointOrders(): void {
-    const waypoints = [...this._waypoints()];
-    this.updateWaypointOrdersInArray(waypoints);
-    this.waypointsChanged.emit([...waypoints]);
   }
 
   /**

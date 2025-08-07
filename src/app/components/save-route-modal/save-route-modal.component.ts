@@ -291,8 +291,7 @@ export class SaveRouteModalComponent implements OnInit {
         );
 
     saveObservable.subscribe({
-      next: (response) => {
-        console.log('Route saved successfully:', response);
+      next: () => {
         this._successMessage.set('Route saved successfully!');
         this.routeSaved.emit();
 
