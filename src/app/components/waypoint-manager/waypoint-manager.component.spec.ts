@@ -262,7 +262,7 @@ describe('WaypointManagerComponent', () => {
       { ...mockWaypoint, id: 'wp3', order: 2, type: 'end' },
     ];
 
-    component['updateWaypointOrders']();
+    (component as any).updateWaypointOrdersInArray(component.waypoints);
 
     expect(component.waypoints[0].type).toBe('start');
     expect(component.waypoints[1].type).toBe('waypoint');

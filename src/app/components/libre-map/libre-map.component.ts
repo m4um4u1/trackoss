@@ -13,9 +13,9 @@ import {
   SimpleChanges,
 } from '@angular/core';
 import { LngLatBounds, Map as MapLibreMap, Marker } from 'maplibre-gl';
-import { MapService } from '../services/map.service';
-import { RouteService } from '../services/route.service';
-import { GeolocationService } from '../services/geolocation.service';
+import { MapService } from '../../services/map.service';
+import { RouteService } from '../../services/route.service';
+import { GeolocationService } from '../../services/geolocation.service';
 import {
   ControlComponent,
   GeolocateControlDirective,
@@ -23,8 +23,8 @@ import {
   NavigationControlDirective,
   ScaleControlDirective,
 } from '@maplibre/ngx-maplibre-gl';
-import { Coordinates } from '../models/coordinates';
-import { MultiWaypointRoute, RouteOptions, RoutePoint, RouteResult } from '../models/route';
+import { Coordinates } from '../../models/coordinates';
+import { MultiWaypointRoute, RouteOptions, RoutePoint, RouteResult } from '../../models/route';
 import { combineLatest, Subject, Subscription } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -119,7 +119,7 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
         console.error('Error loading map tiles:', error);
       },
       complete: () => {
-        console.log('Map tiles data subscription completed');
+        // Map tiles data subscription completed
       },
     });
   }
@@ -286,9 +286,6 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
       .calculateRoute(this.startPoint, this.endPoint, this.routeOptions)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (routeResult: RouteResult) => {
-          // Route will be automatically displayed via setupRouteSubscriptions
-        },
         error: (error) => {
           console.error('Error calculating route:', error);
         },
@@ -359,9 +356,6 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
         .calculateMultiWaypointRoute(this.waypoints, this.routeOptions)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
-          next: (multiWaypointRoute: MultiWaypointRoute) => {
-            // Route will be automatically displayed via setupRouteSubscriptions
-          },
           error: (error) => {
             console.error('Error calculating multi-waypoint route:', error);
           },
@@ -387,26 +381,26 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
   private handleMapClick(lon: number, lat: number): void {
     const coordinates: Coordinates = { lat, lon };
 
-    // If we have waypoints, add to waypoints list
-    if (this.waypoints && this.waypoints.length > 0) {
-      this.addWaypointAtLocation(lon, lat);
-      return;
+    // Check if we're in traditional route mode (no existing waypoints)
+    if (!this.waypoints || this.waypoints.length === 0) {
+      // Traditional route mode - handle start/end points
+      if (!this.startPoint) {
+        // Set start point
+        this.startPointChanged.emit(coordinates);
+        return;
+      } else if (!this.endPoint) {
+        // Set end point
+        this.endPointChanged.emit(coordinates);
+        return;
+      } else {
+        // Both start and end points exist - convert to waypoint mode
+        this.convertTraditionalRouteToWaypoints(lon, lat);
+        return;
+      }
     }
 
-    // If no start point, set as start
-    if (!this.startPoint) {
-      this.startPointChanged.emit(coordinates);
-      return;
-    }
-
-    // If start point exists but no end point, set as end
-    if (!this.endPoint) {
-      this.endPointChanged.emit(coordinates);
-      return;
-    }
-
-    // If both start and end exist, convert to waypoint mode and add the new point
-    this.convertTraditionalRouteToWaypoints(lon, lat);
+    // Already in waypoint mode - add waypoint at location
+    this.addWaypointAtLocation(lon, lat);
   }
 
   /**
@@ -527,21 +521,6 @@ export class LibreMapComponent implements OnInit, OnChanges, OnDestroy {
       this.endMarker.remove();
       this.endMarker = undefined;
     }
-  }
-
-  /**
-   * Clear all markers (traditional and waypoint)
-   */
-  private clearAllMarkers(): void {
-    if (this.startMarker) {
-      this.startMarker.remove?.();
-      this.startMarker = undefined;
-    }
-    if (this.endMarker) {
-      this.endMarker.remove?.();
-      this.endMarker = undefined;
-    }
-    this.clearWaypointMarkers();
   }
 
   /**

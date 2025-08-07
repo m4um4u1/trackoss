@@ -1,0 +1,193 @@
+<div class="d-flex flex-column h-100 p-3 bg-white">
+  <!-- Header with Action Buttons -->
+  <div class="pb-2 mb-3 border-bottom">
+    <div class="d-flex justify-content-between align-items-center">
+      <h5 class="mb-0 text-dark fw-semibold">Route Planning</h5>
+      <div class="d-flex gap-1">
+        <button
+          class="btn btn-sm btn-outline-secondary"
+          (click)="reverseRoute()"
+          [disabled]="!hasWaypoints || currentWaypoints.length < 2"
+          title="Reverse route"
+        >
+          <i class="bi bi-arrow-left-right"></i>
+        </button>
+        <button
+          class="btn btn-sm btn-outline-danger"
+          (click)="clearRoute()"
+          [disabled]="!hasWaypoints"
+          title="Clear all"
+        >
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Location Input -->
+  <div class="mb-3">
+    <div class="input-group">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Add location..."
+        [value]="newLocationText()"
+        (input)="updateNewLocationText($event.target?.value || '')"
+        (keyup.enter)="addLocation()"
+        [disabled]="isGeocoding()"
+      />
+      <button class="btn btn-primary" type="button" (click)="addLocation()" [disabled]="!canAddLocation()">
+        <i class="bi bi-plus" *ngIf="!isGeocoding()"></i>
+        <i class="bi bi-hourglass-split" *ngIf="isGeocoding()" style="animation: spin 1s linear infinite"></i>
+      </button>
+    </div>
+    <small class="form-text text-muted mt-1">
+      <i class="bi bi-info-circle me-1"></i>
+      Click on map or type location above
+    </small>
+  </div>
+
+  <!-- Route Options -->
+  <div class="route-options-section" *ngIf="hasWaypoints">
+    <div class="card border-0 bg-light">
+      <div class="card-body p-3">
+        <h6 class="card-title mb-3">
+          <i class="bi bi-gear me-2"></i>
+          Route Options
+        </h6>
+
+        <!-- Transportation Mode -->
+        <div class="mb-3">
+          <label class="form-label fw-bold text-secondary">Transportation Mode</label>
+          <select
+            class="form-select form-select-sm"
+            [ngModel]="routeOptions.costing"
+            (ngModelChange)="updateRouteOption('costing', $event)"
+          >
+            <option value="bicycle">Bicycle</option>
+            <option value="pedestrian">Hiking</option>
+          </select>
+        </div>
+
+        <!-- Bicycle Type (only show if bicycle is selected) -->
+        <div class="mb-3" *ngIf="routeOptions.costing === 'bicycle'">
+          <label class="form-label fw-bold text-secondary">Bicycle Type</label>
+          <select
+            class="form-select form-select-sm"
+            [ngModel]="routeOptions.bicycleType"
+            (ngModelChange)="updateRouteOption('bicycleType', $event)"
+          >
+            <option value="road">Road Bike</option>
+            <option value="hybrid">Hybrid Bike</option>
+            <option value="city">City Bike</option>
+            <option value="cross">Cross Bike</option>
+            <option value="mountain">Mountain Bike</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Route Points -->
+  <div class="flex-grow-1 overflow-auto" *ngIf="hasWaypoints">
+    <!-- Route Summary -->
+    <div class="bg-light rounded p-3 mb-3" *ngIf="currentMultiWaypointRoute">
+      <div class="d-flex justify-content-center gap-3">
+        <div class="d-flex align-items-center gap-2 text-secondary">
+          <i class="bi bi-signpost text-primary"></i>
+          <span class="fw-medium">{{ formatDistance(currentMultiWaypointRoute.totalDistance) }}</span>
+        </div>
+        <div class="d-flex align-items-center gap-2 text-secondary">
+          <i class="bi bi-clock text-primary"></i>
+          <span class="fw-medium">{{ formatDuration(currentMultiWaypointRoute.totalDuration) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="waypoints-list" cdkDropList (cdkDropListDropped)="drop($event)">
+      <div
+        class="d-flex align-items-center p-3 mb-2 bg-white border rounded-3 position-relative waypoint-item"
+        *ngFor="let waypoint of currentWaypoints; let i = index; trackBy: trackWaypoint"
+        cdkDrag
+      >
+        <!-- Drag Handle -->
+        <div class="text-muted me-2 p-1 rounded cursor-grab" cdkDragHandle>
+          <i class="bi bi-grip-vertical"></i>
+        </div>
+
+        <!-- Waypoint Icon -->
+        <div
+          class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold me-3 waypoint-icon"
+          [class]="getWaypointIconClass(waypoint.type)"
+          style="width: 32px; height: 32px; font-size: 0.875rem"
+        >
+          {{ i + 1 }}
+        </div>
+
+        <!-- Waypoint Details -->
+        <div class="flex-grow-1 min-width-0">
+          <div class="fw-medium text-dark text-truncate mb-1">{{ getWaypointDisplayName(waypoint) }}</div>
+          <div class="small text-muted font-monospace">
+            {{ waypoint.coordinates.lat.toFixed(4) }}, {{ waypoint.coordinates.lon.toFixed(4) }}
+          </div>
+        </div>
+
+        <!-- Remove Button -->
+        <button
+          class="btn btn-sm btn-outline-light text-muted border-0 remove-btn"
+          (click)="removeWaypoint(i)"
+          title="Remove waypoint"
+          style="opacity: 0; transition: opacity 0.2s"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+
+        <!-- Route Segment (between waypoints) -->
+        <div class="route-segment" *ngIf="i < currentWaypoints.length - 1 && currentMultiWaypointRoute?.legs?.[i]">
+          <div class="segment-line">
+            <div class="segment-info">
+              <i class="bi bi-arrow-down text-muted"></i>
+              <small class="text-muted ms-1">
+                {{ formatDistance(currentMultiWaypointRoute.legs[i].distance || 0) }} ·
+                {{ formatDuration(currentMultiWaypointRoute.legs[i].duration || 0) }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Route Button -->
+    <div class="save-route-section mt-3">
+      <button
+        class="btn btn-primary w-100"
+        (click)="openSaveModal()"
+        [disabled]="!hasWaypoints || !currentMultiWaypointRoute"
+        title="Save this route"
+      >
+        <i class="bi bi-bookmark-plus me-2"></i>
+        Save Route
+      </button>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="text-center py-5" *ngIf="!hasWaypoints">
+    <div class="mb-3" style="font-size: 3rem; color: #dee2e6">
+      <i class="bi bi-map"></i>
+    </div>
+    <h6 class="text-secondary mb-2">Plan Your Route</h6>
+    <p class="text-muted small mb-0" style="line-height: 1.4">
+      Add at least 2 locations to get started with route planning.
+    </p>
+  </div>
+
+  <!-- Save Route Modal -->
+  <app-save-route-modal
+    [isVisible]="showSaveModal"
+    [multiWaypointRoute]="currentMultiWaypointRoute"
+    (modalClosed)="closeSaveModal()"
+    (routeSaved)="onRouteSaved()"
+  >
+  </app-save-route-modal>
+</div>

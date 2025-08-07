@@ -5,11 +5,11 @@ import { SimpleChanges } from '@angular/core';
 import { of, throwError } from 'rxjs';
 
 import { LibreMapComponent } from './libre-map.component';
-import { GeolocationService } from '../services/geolocation.service';
-import { MapService } from '../services/map.service';
-import { RouteService } from '../services/route.service';
-import { Coordinates } from '../models/coordinates';
-import { RouteOptions, RoutePoint } from '../models/route';
+import { GeolocationService } from '../../services/geolocation.service';
+import { MapService } from '../../services/map.service';
+import { RouteService } from '../../services/route.service';
+import { Coordinates } from '../../models/coordinates';
+import { RouteOptions, RoutePoint } from '../../models/route';
 
 // Mock MapLibre GL Marker
 jest.mock('maplibre-gl', () => ({
@@ -176,15 +176,6 @@ describe('LibreMapComponent', () => {
   });
 
   it('should handle input changes', () => {
-    const changes: SimpleChanges = {
-      startPoint: {
-        currentValue: mockCoordinates,
-        previousValue: null,
-        firstChange: true,
-        isFirstChange: () => true,
-      },
-    };
-
     component['_map'].set({
       getSource: jest.fn().mockReturnValue(null),
     } as any); // Mock map instance
@@ -513,7 +504,7 @@ describe('LibreMapComponent', () => {
     });
 
     it('should add waypoint to existing waypoints list', () => {
-      const existingWaypoints = [
+      component.waypoints = [
         {
           coordinates: { lat: 52.520008, lon: 13.404954 },
           type: 'start' as const,
@@ -521,7 +512,6 @@ describe('LibreMapComponent', () => {
           order: 0,
         },
       ];
-      component.waypoints = existingWaypoints;
 
       component['handleMapClick'](11.576124, 48.137154);
 
@@ -553,23 +543,19 @@ describe('LibreMapComponent', () => {
       expect((component as any).waypointMarkers).toEqual([]);
     });
 
-    it('should clear all markers', () => {
+    it('should clear start and end markers', () => {
       const startMarker = { remove: jest.fn() };
       const endMarker = { remove: jest.fn() };
-      const waypointMarker = { remove: jest.fn() };
 
       (component as any).startMarker = startMarker as any;
       (component as any).endMarker = endMarker as any;
-      (component as any).waypointMarkers = [waypointMarker as any];
 
-      (component as any).clearAllMarkers();
+      (component as any).clearStartEndMarkers();
 
       expect(startMarker.remove).toHaveBeenCalled();
       expect(endMarker.remove).toHaveBeenCalled();
-      expect(waypointMarker.remove).toHaveBeenCalled();
       expect((component as any).startMarker).toBeUndefined();
       expect((component as any).endMarker).toBeUndefined();
-      expect((component as any).waypointMarkers).toEqual([]);
     });
   });
 
@@ -732,7 +718,8 @@ describe('LibreMapComponent', () => {
       (component as any).waypointMarkers = [];
 
       expect(() => {
-        (component as any).clearAllMarkers();
+        (component as any).clearStartEndMarkers();
+        (component as any).clearWaypointMarkers();
       }).not.toThrow();
 
       expect((component as any).startMarker).toBeUndefined();

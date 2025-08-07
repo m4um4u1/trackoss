@@ -649,8 +649,25 @@ export class RouteService {
         order: point.sequenceOrder,
       }));
 
-    if (userWaypoints.length < 2) {
-      throw new Error('Insufficient waypoints to load route');
+    // Allow routes with any number of waypoints - even single locations for display
+    if (userWaypoints.length === 0) {
+      throw new Error('No waypoints found in saved route');
+    }
+
+    // For routes with only 1 waypoint, we can't calculate a route but can still display the location
+    if (userWaypoints.length === 1) {
+      // Create a simple "route" with just the single waypoint for display
+      const singlePointRoute: MultiWaypointRoute = {
+        waypoints: userWaypoints,
+        totalDistance: 0,
+        totalDuration: 0,
+        routeData: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+        legs: [],
+      };
+      return of(singlePointRoute);
     }
 
     if (userWaypoints.length > 50) {

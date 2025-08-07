@@ -225,7 +225,6 @@ export class RouteDisplayComponent implements OnInit, OnDestroy {
 
   onRouteSaved(): void {
     // Handle successful route save
-    console.log('Route saved successfully');
     // You could emit an event here if needed
   }
 }

@@ -1,116 +1,127 @@
-// CSS Custom Properties for dynamic values
+// CSS Custom Properties for maintainable theming
 :host {
+  // Layout dimensions
   --mobile-sidepanel-width: 85%;
   --navbar-height: 56px;
   --toggle-btn-size: 48px;
+
+  // Spacing
+  --toggle-btn-offset: 15px;
+  --sidepanel-border-color: #dee2e6;
+
+  // Z-index layers
+  --z-backdrop: 1040;
+  --z-sidepanel: 1045;
+  --z-toggle-mobile: 1050;
+  --z-toggle-desktop: 999;
+  --z-map: 1;
+
+  // Transitions
+  --transition-fast: 0.2s ease;
+  --transition-medium: 0.3s ease;
+
+  // Colors
+  --backdrop-color: rgba(0, 0, 0, 0.5);
+  --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-medium: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
-// Toggle button styles
+// Toggle button - simplified with CSS custom properties
 .toggle-btn {
   width: var(--toggle-btn-size);
   height: var(--toggle-btn-size);
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
+  position: fixed;
 
   &:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: var(--shadow-light) !important;
   }
 
   &:active {
     transform: scale(0.95);
   }
 
-  i {
-    transition: transform 0.2s ease;
-  }
-
   // Mobile positioning
   &.mobile-toggle {
-    position: fixed;
-    top: 70px;
-    left: 15px;
-    z-index: 1050;
+    top: calc(var(--navbar-height) + 14px);
+    left: var(--toggle-btn-offset);
+    z-index: var(--z-toggle-mobile);
   }
 
   // Desktop positioning
   &.desktop-toggle {
-    position: absolute;
-    top: 15px;
-    left: 15px;
-    z-index: 1000;
+    top: calc(var(--navbar-height) + var(--toggle-btn-offset));
+    left: var(--toggle-btn-offset);
+    z-index: var(--z-toggle-desktop);
+    transition: left var(--transition-medium);
   }
 }
 
-// Backdrop styles
-.backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1040;
+// Responsive toggle button positioning
+:host(.sidepanel-open) .toggle-btn.desktop-toggle {
+  @media (min-width: 768px) {
+    left: calc(33.333333% + var(--toggle-btn-offset));
+  }
+
+  @media (min-width: 1200px) {
+    left: calc(25% + var(--toggle-btn-offset));
+  }
 }
 
-// Sidepanel container styles
+:host(.sidepanel-closed) .toggle-btn.desktop-toggle {
+  left: var(--toggle-btn-offset);
+}
+
+// Backdrop - simplified
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--backdrop-color);
+  z-index: var(--z-backdrop);
+}
+
+// Sidepanel container - simplified and organized
 .sidepanel-container {
   background-color: white;
-  border-right: 1px solid #dee2e6;
+  border-right: 1px solid var(--sidepanel-border-color);
   scroll-behavior: smooth;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
 
-  // Mobile styles
+  // Base mobile styles
   &.mobile-sidepanel {
     position: fixed;
-    top: var(--navbar-height);
-    left: 0;
+    inset: 0 auto 0 0;
     width: var(--mobile-sidepanel-width);
     max-width: 400px;
-    height: calc(100vh - var(--navbar-height));
-    z-index: 1045;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    transition: transform 0.3s ease;
+    z-index: var(--z-sidepanel);
+    box-shadow: var(--shadow-medium);
+    transition: transform var(--transition-medium);
+
+    // iOS touch optimization
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-
-    // iOS-specific touch improvements
     touch-action: pan-y;
-    -webkit-transform: translate3d(0, 0, 0);
     transform: translate3d(0, 0, 0);
     will-change: transform;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
 
     &.closed {
       transform: translateX(-100%);
     }
-
     &.open {
       transform: translateX(0);
-    }
-
-    // Content container within mobile sidepanel
-    .container-fluid {
-      touch-action: pan-y;
-      -webkit-overflow-scrolling: touch;
-      -webkit-transform: translate3d(0, 0, 0);
-      transform: translate3d(0, 0, 0);
     }
   }
 
   // Desktop/Tablet styles
   &.desktop-sidepanel {
-    overflow-y: auto;
-    overflow-x: hidden;
-    transition: all 0.3s ease;
+    height: 100%;
+    transition: all var(--transition-medium);
 
     &.open {
       min-width: 320px;
-      padding-left: 0;
-      padding-right: 0;
-      height: 100vh;
+      padding: 0;
     }
 
     &.closed {
@@ -119,64 +130,51 @@
 
     &.col-3,
     &.col-4 {
-      padding-left: 0;
-      padding-right: 0;
-      height: 100vh;
+      padding: 0;
+      height: 100%;
     }
+  }
 
-    // Ensure content doesn't overflow on narrow widths
-    .container-fluid {
-      padding-left: 0.5rem;
-      padding-right: 0.5rem;
+  // Content spacing
+  .container-fluid {
+    padding: 0 0.5rem;
 
-      @media (min-width: 1200px) {
-        padding-left: 1rem;
-        padding-right: 1rem;
-      }
+    @media (min-width: 1200px) {
+      padding: 0 1rem;
     }
   }
 }
 
-// Map container styles
+// Map container - simplified
 .map-container {
-  // Mobile styles
+  // Mobile
   &.mobile-map {
     position: fixed;
-    top: var(--navbar-height);
-    width: 100%;
-    height: calc(100vh - var(--navbar-height));
-    z-index: 1;
+    inset: 0;
+    z-index: var(--z-map);
   }
 
-  // Desktop/Tablet styles
+  // Desktop/Tablet
   &.desktop-map {
-    padding-left: 0;
-    padding-right: 0;
-    height: 100vh;
+    height: 100%;
+    padding: 0;
 
     &.col,
     &.col-12 {
-      padding-left: 0;
-      padding-right: 0;
-      height: 100vh;
+      height: 100%;
+      padding: 0;
     }
   }
 
-  // Ensure the map component inside takes full dimensions
+  // Map component sizing
   app-libre-map {
     display: block;
     width: 100%;
     height: 100%;
 
-    // Ensure the MapLibre map container gets proper dimensions
-    mgl-map {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    // Target the actual map canvas
+    mgl-map,
     #map {
+      display: block;
       width: 100% !important;
       height: 100% !important;
     }

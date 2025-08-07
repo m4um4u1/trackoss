@@ -1,0 +1,123 @@
+// Waypoint icon colors
+.waypoint-start {
+  background-color: #28a745 !important;
+}
+
+.waypoint-end {
+  background-color: #dc3545 !important;
+}
+
+.waypoint-intermediate {
+  background-color: #6c757d !important;
+}
+
+// Cursor styles
+.cursor-grab {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Hover effects for waypoint items
+.waypoint-item {
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    border-color: var(--bs-primary) !important;
+
+    .remove-btn {
+      opacity: 1 !important;
+    }
+  }
+
+  // Drag and drop styles
+  &.cdk-drag-preview {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2) !important;
+    transform: rotate(2deg);
+  }
+}
+
+// Route segment styling
+.route-segment {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+
+  .segment-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #dee2e6;
+      z-index: 0;
+    }
+
+    .segment-info {
+      background: #fff;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+      border: 1px solid #dee2e6;
+      display: flex;
+      align-items: center;
+      z-index: 1;
+      position: relative;
+    }
+  }
+}
+
+// Increase margin when segment info is present
+.waypoint-item:not(:last-child) {
+  margin-bottom: 1.5rem;
+}
+
+// Drag and drop placeholder styles
+.cdk-drop-list-dragging .waypoint-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+  border: 2px dashed var(--bs-primary) !important;
+  background: var(--bs-light) !important;
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+// Animations
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+// Responsive improvements
+@media (max-width: 768px) {
+  .waypoint-item {
+    padding: 0.625rem !important;
+  }
+}
+
+// Add top padding on desktop to ensure title is never overlapped by toggle button
+.d-flex.flex-column.h-100.p-3.bg-white {
+  @media (min-width: 768px) {
+    padding-top: 4rem !important; // Extra space at top for toggle button clearance
+  }
+}

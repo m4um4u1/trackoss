@@ -1,39 +1,96 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
 
 import { MapPageComponent } from './map-page.component';
+import { ResponsiveService } from '../../services/responsive.service';
+import { LayoutStateService } from '../../services/layout-state.service';
+import { RouteService } from '../../services/route.service';
+import { BackendApiService } from '../../services/backend-api.service';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Coordinates } from '../../models/coordinates';
 import { RoutePoint } from '../../models/route';
 import { ActivatedRoute } from '@angular/router';
+import { of } from 'rxjs';
 
 describe('MapPageComponent', () => {
   let component: MapPageComponent;
   let fixture: ComponentFixture<MapPageComponent>;
+  let mockResponsiveService: jest.Mocked<ResponsiveService>;
+  let mockLayoutStateService: jest.Mocked<LayoutStateService>;
+  let mockRouteService: jest.Mocked<RouteService>;
+  let mockBackendApiService: jest.Mocked<BackendApiService>;
 
   const mockCoordinates: Coordinates = { lat: 52.520008, lon: 13.404954 };
   const mockEndCoordinates: Coordinates = { lat: 48.137154, lon: 11.576124 };
   const mockWaypoints: RoutePoint[] = [
     {
       coordinates: { lat: 52.520008, lon: 13.404954 },
-      type: 'waypoint',
-      order: 1,
+      type: 'start',
+      order: 0,
       name: 'Berlin',
+      id: '1',
     },
     {
       coordinates: { lat: 48.137154, lon: 11.576124 },
-      type: 'waypoint',
-      order: 2,
+      type: 'end',
+      order: 1,
       name: 'Munich',
+      id: '2',
     },
   ];
 
   beforeEach(async () => {
+    // Create mock services
+    mockResponsiveService = {
+      isMobile: jest.fn().mockReturnValue(false),
+      isTablet: jest.fn().mockReturnValue(false),
+      isDesktop: jest.fn().mockReturnValue(true),
+      state: jest.fn().mockReturnValue({
+        isMobile: false,
+        isTablet: false,
+        isDesktop: true,
+        screenWidth: 1200,
+      }),
+      screenWidth: signal(1200).asReadonly(),
+      getSidepanelColumnClass: jest.fn().mockReturnValue('col-3'),
+      shouldSidepanelBeOpenByDefault: jest.fn().mockReturnValue(true),
+    } as any;
+
+    mockLayoutStateService = {
+      isSidepanelOpen: signal(true).asReadonly(),
+      toggleSidepanel: jest.fn(),
+      closeSidepanel: jest.fn(),
+      openSidepanel: jest.fn(),
+      updateBodyScrollLock: jest.fn(),
+      sidepanelClasses: jest.fn().mockReturnValue('desktop-sidepanel open col-3'),
+      mapClasses: jest.fn().mockReturnValue('desktop-map col'),
+      toggleButtonClasses: jest.fn().mockReturnValue('toggle-btn desktop-toggle'),
+      rootClasses: jest.fn().mockReturnValue('position-relative h-100 overflow-hidden desktop-mode sidepanel-open'),
+    } as any;
+
+    mockRouteService = {
+      loadSavedRoute: jest.fn().mockReturnValue(of({})),
+      clearMultiWaypointRoute: jest.fn(),
+      getCurrentMultiWaypointRoute: jest.fn().mockReturnValue(of(null)),
+    } as any;
+
+    mockBackendApiService = {
+      getRoute: jest.fn().mockReturnValue(of({})),
+      getMapProxyUrl: jest.fn().mockReturnValue(of('http://test-proxy.com')),
+    } as any;
+
     await TestBed.configureTestingModule({
       imports: [MapPageComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: ResponsiveService, useValue: mockResponsiveService },
+        { provide: LayoutStateService, useValue: mockLayoutStateService },
+        { provide: RouteService, useValue: mockRouteService },
+        { provide: BackendApiService, useValue: mockBackendApiService },
+        { provide: BreakpointObserver, useValue: { observe: jest.fn().mockReturnValue(of({})) } },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -60,6 +117,11 @@ describe('MapPageComponent', () => {
     expect(component.currentStartPoint).toBeUndefined();
     expect(component.currentEndPoint).toBeUndefined();
     expect(component.currentWaypoints).toEqual([]);
+  });
+
+  it('should expose responsive and layout services', () => {
+    expect(component.responsive).toBe(mockResponsiveService);
+    expect(component.layout).toBe(mockLayoutStateService);
   });
 
   it('should update route points when onRoutePointsUpdated is called', () => {
@@ -93,19 +155,47 @@ describe('MapPageComponent', () => {
     expect(component.currentWaypoints).toEqual(mockWaypoints);
   });
 
+  it('should clear route when waypoints are reduced to less than 2', () => {
+    const singleWaypoint = [mockWaypoints[0]];
+
+    component.onWaypointsChanged(singleWaypoint);
+
+    expect(mockRouteService.clearMultiWaypointRoute).toHaveBeenCalled();
+    expect(component.currentWaypoints).toEqual(singleWaypoint);
+  });
+
   it('should clear waypoints when empty array is passed', () => {
     // First set some waypoints
     component.onWaypointsChanged(mockWaypoints);
     component.onWaypointsChanged([]);
 
     expect(component.currentWaypoints).toEqual([]);
+    expect(mockRouteService.clearMultiWaypointRoute).toHaveBeenCalled();
   });
 
-  // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
+  it('should toggle sidepanel through layout service', () => {
+    component.toggleSidepanel();
 
-  // Removed test for waypoint mode toggle as this functionality doesn't exist in the component
+    expect(mockLayoutStateService.toggleSidepanel).toHaveBeenCalled();
+  });
 
-  // Removed test for multiple waypoint mode toggles as this functionality doesn't exist in the component
+  it('should handle backdrop click on mobile', () => {
+    // Mock mobile state
+    mockResponsiveService.isMobile.mockReturnValue(true);
+
+    component.onBackdropClick();
+
+    expect(mockLayoutStateService.closeSidepanel).toHaveBeenCalled();
+  });
+
+  it('should not handle backdrop click on desktop', () => {
+    // Mock desktop state (default)
+    mockResponsiveService.isMobile.mockReturnValue(false);
+
+    component.onBackdropClick();
+
+    expect(mockLayoutStateService.closeSidepanel).not.toHaveBeenCalled();
+  });
 
   it('should handle empty route points object', () => {
     // First set some route points
@@ -173,417 +263,40 @@ describe('MapPageComponent', () => {
     });
   });
 
-  describe('Responsive behavior', () => {
-    beforeEach(() => {
-      // Mock window.innerWidth for testing
-      Object.defineProperty(window, 'innerWidth', {
-        writable: true,
-        configurable: true,
-        value: 1200,
-      });
+  describe('Service integration', () => {
+    it('should use responsive service for screen detection', () => {
+      expect(component.responsive.isMobile).toBeDefined();
+      expect(component.responsive.isTablet).toBeDefined();
+      expect(component.responsive.isDesktop).toBeDefined();
     });
 
-    it('should detect mobile screen size correctly', () => {
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-
-      expect(component.isMobile).toBe(true);
-      expect(component.isTablet).toBe(false);
-    });
-
-    it('should detect tablet screen size correctly', () => {
-      Object.defineProperty(window, 'innerWidth', { value: 1000, writable: true });
-      component['checkScreenSize']();
-
-      expect(component.isMobile).toBe(false);
-      expect(component.isTablet).toBe(true);
-    });
-
-    it('should detect desktop screen size correctly', () => {
-      Object.defineProperty(window, 'innerWidth', { value: 1400, writable: true });
-      component['checkScreenSize']();
-
-      expect(component.isMobile).toBe(false);
-      expect(component.isTablet).toBe(false);
-    });
-
-    it('should open sidepanel when switching from mobile to desktop', () => {
-      // Start as mobile with closed sidepanel
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize'](); // Set to mobile first
-
-      // Switch to desktop
-      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
-      component['checkScreenSize']();
-
-      expect(component.isSidepanelOpen).toBe(true);
-    });
-
-    it('should close sidepanel when switching from desktop to mobile', () => {
-      // Start as desktop with open sidepanel
-      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
-      component['checkScreenSize'](); // Set to desktop first
-
-      // Switch to mobile
-      Object.defineProperty(window, 'innerWidth', { value: 600, writable: true });
-      component['checkScreenSize']();
-
-      expect(component.isSidepanelOpen).toBe(false);
-    });
-
-    it('should call updateCSSProperties when screen size changes', () => {
-      const updateCSSPropertiesSpy = jest.spyOn(component as any, 'updateCSSProperties');
-
-      component['checkScreenSize']();
-
-      expect(updateCSSPropertiesSpy).toHaveBeenCalled();
-    });
-
-    it('should call resizeMapAfterToggle when screen size changes', () => {
-      const resizeMapSpy = jest.spyOn(component as any, 'resizeMapAfterToggle');
-
-      component['checkScreenSize']();
-
-      expect(resizeMapSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('CSS Properties Management', () => {
-    let hostElement: HTMLElement;
-    let setPropertySpy: jest.SpyInstance;
-
-    beforeEach(() => {
-      hostElement = fixture.nativeElement;
-      setPropertySpy = jest.spyOn(hostElement.style, 'setProperty');
-    });
-
-    it('should set mobile sidepanel width when on mobile', () => {
-      // Set mobile screen size
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-
-      component['updateCSSProperties']();
-
-      expect(setPropertySpy).toHaveBeenCalledWith('--mobile-sidepanel-width', '85%');
-    });
-
-    it('should not set CSS properties when not on mobile', () => {
-      // Set desktop screen size
-      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
-      component['checkScreenSize']();
-
-      component['updateCSSProperties']();
-
-      expect(setPropertySpy).not.toHaveBeenCalled();
-    });
-
-    it('should not set CSS properties when on desktop with sidepanel closed', () => {
-      // Set desktop screen size
-      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
-      component['checkScreenSize']();
-
-      component['updateCSSProperties']();
-
-      expect(setPropertySpy).not.toHaveBeenCalled();
+    it('should use layout service for sidepanel management', () => {
+      expect(component.layout.toggleSidepanel).toBeDefined();
+      expect(component.layout.sidepanelClasses).toBeDefined();
+      expect(component.layout.mapClasses).toBeDefined();
     });
   });
 
   describe('Sidepanel functionality', () => {
-    it('should toggle sidepanel state', () => {
-      const initialState = component.isSidepanelOpen;
-
+    it('should call layout service when toggling sidepanel', () => {
       component.toggleSidepanel();
 
-      expect(component.isSidepanelOpen).toBe(!initialState);
-    });
-
-    it('should call updateCSSProperties when toggling sidepanel', () => {
-      const updateCSSPropertiesSpy = jest.spyOn(component as any, 'updateCSSProperties');
-
-      component.toggleSidepanel();
-
-      expect(updateCSSPropertiesSpy).toHaveBeenCalled();
-    });
-
-    it('should call resizeMapAfterToggle when toggling sidepanel', () => {
-      const resizeMapSpy = jest.spyOn(component as any, 'resizeMapAfterToggle');
-
-      component.toggleSidepanel();
-
-      expect(resizeMapSpy).toHaveBeenCalled();
-    });
-
-    it('should handle backdrop click on mobile when sidepanel is open', () => {
-      // Set mobile screen size and ensure sidepanel is open
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-
-      component.onBackdropClick();
-
-      expect(component.isSidepanelOpen).toBe(false);
-    });
-
-    it('should not handle backdrop click on mobile when sidepanel is closed', () => {
-      // Set mobile screen size and close sidepanel
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-      component.toggleSidepanel(); // Close it
-
-      component.onBackdropClick();
-
-      expect(component.isSidepanelOpen).toBe(false);
-    });
-
-    it('should not handle backdrop click on desktop', () => {
-      // Set desktop screen size
-      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
-      component['checkScreenSize']();
-      component.onBackdropClick();
-
-      expect(component.isSidepanelOpen).toBe(true);
+      expect(mockLayoutStateService.toggleSidepanel).toHaveBeenCalled();
     });
   });
 
   describe('Body scroll handling', () => {
-    beforeEach(() => {
-      // Reset document.body.style before each test
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-    });
+    it('should call layout service to update body scroll lock on destroy', () => {
+      component.ngOnDestroy();
 
-    it('should prevent body scroll when mobile sidepanel is open', () => {
-      // Set mobile screen size (sidepanel will be closed by default on mobile)
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-      // Open sidepanel on mobile
-      component.toggleSidepanel();
-
-      component['handleBodyScroll']();
-
-      expect(document.body.style.overflow).toBe('hidden');
-      expect(document.body.style.position).toBe('fixed');
-      expect(document.body.style.width).toBe('100%');
-    });
-
-    it('should restore body scroll when mobile sidepanel is closed', () => {
-      // Set mobile screen size (sidepanel will be closed by default)
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-
-      component['handleBodyScroll']();
-
-      expect(document.body.style.overflow).toBe('');
-      expect(document.body.style.position).toBe('');
-      expect(document.body.style.width).toBe('');
-    });
-
-    it('should not affect body scroll on desktop', () => {
-      // Set desktop screen size
-      Object.defineProperty(window, 'innerWidth', { value: 1200, writable: true });
-      component['checkScreenSize']();
-
-      component['handleBodyScroll']();
-
-      expect(document.body.style.overflow).toBe('');
-      expect(document.body.style.position).toBe('');
-      expect(document.body.style.width).toBe('');
-    });
-  });
-
-  describe('Touch event handling', () => {
-    let mockTouchEvent: Partial<TouchEvent>;
-    let mockTarget: Partial<HTMLElement>;
-
-    beforeEach(() => {
-      mockTarget = {
-        scrollTop: 0,
-        scrollHeight: 1000,
-        clientHeight: 500,
-        _initialTouchY: undefined,
-      } as any;
-
-      const mockTouchList = {
-        0: { clientY: 100 } as Touch,
-        length: 1,
-        item: (index: number) => (index === 0 ? ({ clientY: 100 } as Touch) : null),
-        [Symbol.iterator]: function* () {
-          yield { clientY: 100 } as Touch;
-        },
-      } as unknown as TouchList;
-
-      mockTouchEvent = {
-        currentTarget: mockTarget as HTMLElement,
-        touches: mockTouchList,
-        preventDefault: jest.fn(),
-      } as any;
-    });
-
-    it('should store initial touch position on touchstart', () => {
-      // Set mobile screen size and open sidepanel
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-      component.toggleSidepanel(); // Open sidepanel on mobile
-
-      // Create new mock touch event with updated touches
-      const newTouchList = {
-        0: { clientY: 150 } as Touch,
-        length: 1,
-        item: (index: number) => (index === 0 ? ({ clientY: 150 } as Touch) : null),
-        [Symbol.iterator]: function* () {
-          yield { clientY: 150 } as Touch;
-        },
-      } as unknown as TouchList;
-      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList } as any;
-
-      component.onSidepanelTouchStart(mockTouchEvent as TouchEvent);
-
-      expect((mockTarget as any)._initialTouchY).toBe(150);
-    });
-
-    it('should prevent overscroll at top on mobile', () => {
-      // Set mobile screen size and open sidepanel
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-      component.toggleSidepanel(); // Open sidepanel on mobile
-
-      mockTarget.scrollTop = 0;
-      (mockTarget as any)._initialTouchY = 150;
-      // Create new mock touch list for this test
-      const newTouchList = {
-        0: { clientY: 200 } as Touch,
-        length: 1,
-        item: (index: number) => (index === 0 ? ({ clientY: 200 } as Touch) : null),
-        [Symbol.iterator]: function* () {
-          yield { clientY: 200 } as Touch;
-        },
-      } as unknown as TouchList;
-      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList } as any;
-
-      component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
-
-      expect(mockTouchEvent.preventDefault).toHaveBeenCalled();
-    });
-
-    it('should prevent overscroll at bottom on mobile', () => {
-      // Set mobile screen size and open sidepanel
-      Object.defineProperty(window, 'innerWidth', { value: 767, writable: true });
-      component['checkScreenSize']();
-      component.toggleSidepanel(); // Open sidepanel on mobile
-
-      // Update mock target properties
-      mockTarget = {
-        ...mockTarget,
-        scrollTop: 499, // Near bottom (scrollTop + clientHeight >= scrollHeight - 1)
-        scrollHeight: 1000,
-        clientHeight: 500,
-        _initialTouchY: 150,
-      } as any;
-
-      // Create new mock touch list for this test
-      const newTouchList = {
-        0: { clientY: 100 } as Touch,
-        length: 1,
-        item: (index: number) => (index === 0 ? ({ clientY: 100 } as Touch) : null),
-        [Symbol.iterator]: function* () {
-          yield { clientY: 100 } as Touch;
-        },
-      } as unknown as TouchList;
-      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList, currentTarget: mockTarget } as any;
-
-      component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
-
-      expect(mockTouchEvent.preventDefault).toHaveBeenCalled();
-    });
-
-    it('should allow normal scrolling in middle of content', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = true;
-      // Update mock target for middle scroll position
-      mockTarget = {
-        ...mockTarget,
-        scrollTop: 250, // Middle of scrollable area
-        _initialTouchY: 150,
-      } as any;
-
-      // Create new mock touch list for this test
-      const newTouchList = {
-        0: { clientY: 100 } as Touch,
-        length: 1,
-        item: (index: number) => (index === 0 ? ({ clientY: 100 } as Touch) : null),
-        [Symbol.iterator]: function* () {
-          yield { clientY: 100 } as Touch;
-        },
-      } as unknown as TouchList;
-      mockTouchEvent = { ...mockTouchEvent, touches: newTouchList, currentTarget: mockTarget } as any;
-
-      component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
-
-      expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
-    });
-
-    it('should not handle touch events on desktop', () => {
-      component.isMobile = false;
-      component.isSidepanelOpen = true;
-
-      component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
-
-      expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
-    });
-
-    it('should not handle touch events when sidepanel is closed', () => {
-      component.isMobile = true;
-      component.isSidepanelOpen = false;
-
-      component.onSidepanelTouchMove(mockTouchEvent as TouchEvent);
-
-      expect(mockTouchEvent.preventDefault).not.toHaveBeenCalled();
-    });
-
-    it('should not handle touchstart when not on mobile', () => {
-      component.isMobile = false;
-      component.isSidepanelOpen = true;
-
-      component.onSidepanelTouchStart(mockTouchEvent as TouchEvent);
-
-      expect((mockTarget as any)._initialTouchY).toBeUndefined();
-    });
-  });
-
-  describe('Window resize handling', () => {
-    it('should call checkScreenSize on window resize', () => {
-      const checkScreenSizeSpy = jest.spyOn(component as any, 'checkScreenSize');
-
-      // Trigger window resize event
-      const resizeEvent = new Event('resize');
-      window.dispatchEvent(resizeEvent);
-
-      expect(checkScreenSizeSpy).toHaveBeenCalled();
+      expect(mockLayoutStateService.updateBodyScrollLock).toHaveBeenCalled();
     });
   });
 
   describe('Component lifecycle', () => {
-    it('should call checkScreenSize and updateCSSProperties on init', () => {
-      const checkScreenSizeSpy = jest.spyOn(component as any, 'checkScreenSize');
-      const updateCSSPropertiesSpy = jest.spyOn(component as any, 'updateCSSProperties');
-
-      component.ngOnInit();
-
-      expect(checkScreenSizeSpy).toHaveBeenCalled();
-      expect(updateCSSPropertiesSpy).toHaveBeenCalled();
-    });
-
-    it('should restore body scroll on destroy', () => {
-      // Set some body styles
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-
-      component.ngOnDestroy();
-
-      expect(document.body.style.overflow).toBe('');
-      expect(document.body.style.position).toBe('');
-      expect(document.body.style.width).toBe('');
+    it('should initialize component properly', () => {
+      expect(component).toBeTruthy();
+      expect(component.currentWaypoints).toEqual([]);
     });
   });
 
