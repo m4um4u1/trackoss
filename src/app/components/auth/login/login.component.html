@@ -1,0 +1,64 @@
+<div class="container-fluid vh-100 d-flex align-items-center justify-content-center bg-light">
+  <div class="card shadow" style="width: 100%; max-width: 400px">
+    <div class="card-header text-center bg-primary text-white">
+      <h4 class="mb-0">
+        <i class="bi bi-box-arrow-in-right me-2"></i>
+        Login to TrackOSS
+      </h4>
+    </div>
+    <div class="card-body">
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="mb-3">
+          <label for="username" class="form-label">Username</label>
+          <input
+            type="text"
+            class="form-control"
+            id="username"
+            formControlName="username"
+            [class.is-invalid]="isFieldInvalid('username')"
+            placeholder="Enter your username"
+          />
+          <div class="invalid-feedback">
+            <span *ngIf="loginForm.get('username')?.errors?.['required']">Username is required</span>
+            <span *ngIf="loginForm.get('username')?.errors?.['minlength']">Username must be at least 3 characters</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Password</label>
+          <input
+            type="password"
+            class="form-control"
+            id="password"
+            formControlName="password"
+            [class.is-invalid]="isFieldInvalid('password')"
+            placeholder="Enter your password"
+          />
+          <div class="invalid-feedback">
+            <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</span>
+            <span *ngIf="loginForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters</span>
+          </div>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary" [disabled]="loginForm.invalid || isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i class="bi bi-box-arrow-in-right me-2" *ngIf="!isLoading"></i>
+            {{ isLoading ? 'Logging in...' : 'Login' }}
+          </button>
+        </div>
+
+        <div *ngIf="errorMessage" class="alert alert-danger mt-3" role="alert">
+          <i class="bi bi-exclamation-circle me-2"></i>
+          {{ errorMessage }}
+        </div>
+      </form>
+    </div>
+    <div class="card-footer text-center">
+      <small class="text-muted">
+        Don't have an account?
+        <a routerLink="/register" class="text-decoration-none">Sign up here</a>
+      </small>
+    </div>
+  </div>
+</div>

@@ -8,9 +8,10 @@ import { Coordinates } from '../../models/coordinates';
 import { RoutePoint } from '../../models/route';
 import { RouteService } from '../../services/route.service';
 import { BackendApiService } from '../../services/backend-api.service';
+import { AuthService } from '../../services/auth.service';
 import { ResponsiveService } from '../../services/responsive.service';
 import { LayoutStateService } from '../../services/layout-state.service';
-import { RouteResponse } from '../../models/backend-api';
+import { RouteResponse, PageResponse } from '../../models/backend-api';
 
 @Component({
   selector: 'app-map-page',
@@ -33,6 +34,7 @@ export class MapPageComponent implements OnInit, OnDestroy {
     private backendApiService: BackendApiService,
     private responsiveService: ResponsiveService,
     private layoutStateService: LayoutStateService,
+    private authService: AuthService,
   ) {
     this.setupEffects();
   }
@@ -48,6 +50,7 @@ export class MapPageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadRouteFromQueryParams();
+    this.loadInitialRoutes();
   }
 
   private loadRouteFromQueryParams(): void {
@@ -94,6 +97,54 @@ export class MapPageComponent implements OnInit, OnDestroy {
         name: point.name || `Waypoint ${point.sequenceOrder + 1}`,
         order: point.sequenceOrder,
       }));
+  }
+
+  /**
+   * Load initial routes to display on the map based on authentication status
+   */
+  private loadInitialRoutes(): void {
+    // Only load if no specific route is being displayed from query params
+    if (!this.route.snapshot.queryParamMap.get('routeId')) {
+      if (this.authService.isAuthenticated()) {
+        // Load all routes for authenticated users
+        this.loadAllRoutes();
+      } else {
+        // Load only public routes for unauthenticated users
+        this.loadPublicRoutes();
+      }
+    }
+  }
+
+  /**
+   * Load all routes for authenticated users
+   */
+  private loadAllRoutes(): void {
+    this.backendApiService.getRoutes({ page: 0, size: 50 }).subscribe({
+      next: (response: PageResponse<RouteResponse>) => {
+        console.log(`Loaded ${response.content.length} routes for authenticated user`);
+        // Here you can store the routes or display them as markers on the map
+        // For now, just log them
+      },
+      error: (error) => {
+        console.error('Error loading all routes:', error);
+      },
+    });
+  }
+
+  /**
+   * Load only public routes for unauthenticated users
+   */
+  private loadPublicRoutes(): void {
+    this.backendApiService.getPublicRoutes(0, 50).subscribe({
+      next: (response: PageResponse<RouteResponse>) => {
+        console.log(`Loaded ${response.content.length} public routes for unauthenticated user`);
+        // Here you can store the routes or display them as markers on the map
+        // For now, just log them
+      },
+      error: (error) => {
+        console.error('Error loading public routes:', error);
+      },
+    });
   }
 
   ngOnDestroy(): void {

@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { RouteResponse, RouteType } from '../../models/backend-api';
 import { RouteMetadata } from '../../models/route-metadata';
 
@@ -15,6 +16,8 @@ export class RouteCardComponent {
   @Input({ required: true }) route!: RouteResponse;
   @Output() routeViewed = new EventEmitter<string>();
   @Output() routeDeleted = new EventEmitter<string>();
+
+  private readonly authService = inject(AuthService);
 
   // Expose enums to template
   RouteType = RouteType;
@@ -164,6 +167,30 @@ export class RouteCardComponent {
 
   onDeleteRoute() {
     this.routeDeleted.emit(this.route.id);
+  }
+
+  /**
+   * Check if the current user can delete this route
+   * Only authenticated users can delete routes, and typically only their own routes
+   */
+  get canDeleteRoute(): boolean {
+    if (!this.authService.isAuthenticated()) {
+      return false;
+    }
+
+    // In a full implementation, you'd check if the current user owns this route
+    // For now, we'll allow authenticated users to delete routes they see
+    // The backend should enforce proper ownership checks
+    const currentUser = this.authService.getCurrentUserValue();
+
+    // If we have user information and route has a userId, check ownership
+    if (currentUser && this.route.userId) {
+      return currentUser.id.toString() === this.route.userId;
+    }
+
+    // Fallback: allow authenticated users to attempt deletion
+    // (backend will enforce proper authorization)
+    return true;
   }
 
   formatRouteType(routeType: RouteType): string {

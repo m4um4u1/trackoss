@@ -191,11 +191,14 @@ export class RouteService {
 
   /**
    * Get the routing base URL based on environment configuration
+   * Now points directly to Valhalla service (with CORS enabled)
    */
   private getRoutingBaseUrl(): Observable<string> {
     if (environment.production && environment.useConfigService) {
+      // Production: Use Valhalla URL from config
       return this.configService.loadConfig().pipe(map((config) => `${config.valhallaUrl}/route`));
     } else {
+      // Development: Use Valhalla URL directly from environment
       return of(`${environment.valhallaUrl}/route`);
     }
   }

@@ -1,17 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { of } from 'rxjs';
 
 import { BackendApiService } from './backend-api.service';
-import { ConfigService } from './config.service';
 import { environment } from '../../environments/environments';
 import { PageResponse, PointType, RouteCreateRequest, RouteResponse, RouteType } from '../models/backend-api';
 
 describe('BackendApiService', () => {
   let service: BackendApiService;
   let httpMock: HttpTestingController;
-  let configService: jest.Mocked<ConfigService>;
+  let originalConsoleError: jest.SpyInstance;
 
   const mockRouteCreateRequest: RouteCreateRequest = {
     name: 'Test Route',
@@ -75,60 +73,28 @@ describe('BackendApiService', () => {
   const getBackendBaseUrl = () => 'http://test-config.com';
 
   beforeEach(() => {
-    const configServiceSpy = {
-      loadConfig: jest.fn().mockReturnValue(
-        of({
-          baseUrl: 'http://test-config.com',
-          valhallaUrl: 'http://test-config.com/valhalla',
-        }),
-      ),
-    };
+    // Mock console.error once
+    originalConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Mock the environment for testing to use direct URLs
+    (environment as any).baseUrl = 'http://test-config.com';
+    (environment as any).useConfigService = false;
 
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        BackendApiService,
-        { provide: ConfigService, useValue: configServiceSpy },
-      ],
+      providers: [provideHttpClient(), provideHttpClientTesting(), BackendApiService],
     });
     service = TestBed.inject(BackendApiService);
     httpMock = TestBed.inject(HttpTestingController);
-    configService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
-
-    // Mock the environment for testing
-    (environment as any).baseUrl = 'http://localhost:8080';
   });
 
   afterEach(() => {
     httpMock.verify();
+    // Restore console.error after each test
+    originalConsoleError.mockRestore();
   });
 
   it('should be created', () => {
     expect(service).toBeTruthy();
-  });
-
-  describe('getMapProxyUrl', () => {
-    it('should return /api/map-proxy in development mode', () => {
-      // Mock development environment
-      (environment as any).production = false;
-      (environment as any).useConfigService = false;
-
-      service.getMapProxyUrl().subscribe((url) => {
-        expect(url).toBe('/api/map-proxy');
-      });
-    });
-
-    it('should use ConfigService in production mode', () => {
-      // Mock production environment
-      (environment as any).production = true;
-      (environment as any).useConfigService = true;
-
-      service.getMapProxyUrl().subscribe((url) => {
-        expect(url).toBe(getBackendBaseUrl());
-        expect(configService.loadConfig).toHaveBeenCalled();
-      });
-    });
   });
 
   describe('createRoute', () => {

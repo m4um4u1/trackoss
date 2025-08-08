@@ -6,6 +6,9 @@ import { catchError, map } from 'rxjs/operators';
 export interface AppConfig {
   baseUrl: string;
   valhallaUrl: string;
+  mapTilerApiKey?: string;
+  mapTilerUrl?: string;
+  mapTilerAllowedDomains?: string | string[];
 }
 
 @Injectable({
@@ -31,7 +34,9 @@ export class ConfigService {
         // Fallback to environment values if config.json fails to load
         this.config = {
           baseUrl: '',
-          valhallaUrl: '/api/valhalla',
+          valhallaUrl: 'http://localhost:8002',
+          mapTilerApiKey: '',
+          mapTilerUrl: 'https://api.maptiler.com/maps',
         };
         return of(this.config);
       }),

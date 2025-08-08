@@ -110,5 +110,10 @@ export interface RouteSearchRequest {
   search?: string;
   userId?: string;
   publicOnly?: boolean;
+  minDistance?: number; // meters
+  maxDistance?: number; // meters
+  routeType?: RouteType;
+  difficulty?: number;
+  surfaceType?: string;
   pageable: PageableRequest;
 }

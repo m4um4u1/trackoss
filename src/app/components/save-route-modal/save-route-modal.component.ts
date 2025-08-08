@@ -12,6 +12,8 @@ import {
 
 import { FormsModule } from '@angular/forms';
 import { RouteService } from '../../services/route.service';
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 import { MultiWaypointRoute, RouteResult } from '../../models/route';
 import { RouteType } from '../../models/backend-api';
 import {
@@ -41,6 +43,8 @@ export class SaveRouteModalComponent implements OnInit {
   @Output() routeSaved = new EventEmitter<void>();
 
   private readonly routeService = inject(RouteService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   // Signal-based form data
   private readonly _routeName = signal('');
@@ -244,6 +248,12 @@ export class SaveRouteModalComponent implements OnInit {
   }
 
   saveRoute(): void {
+    // Check if user is authenticated first
+    if (!this.authService.isAuthenticated()) {
+      this.promptLogin();
+      return;
+    }
+
     if (!this.isFormValid()) {
       this._errorMessage.set('Route name is required');
       return;
@@ -313,6 +323,20 @@ export class SaveRouteModalComponent implements OnInit {
   closeModal(): void {
     this.resetForm();
     this.modalClosed.emit();
+  }
+
+  /**
+   * Prompt user to login before saving route
+   */
+  private promptLogin(): void {
+    // Close the current modal first
+    this.closeModal();
+
+    // Show a message that login is required
+    alert('Please log in to save routes. You will be redirected to the login page.');
+
+    // Navigate to login page
+    this.router.navigate(['/login']);
   }
 
   private resetForm(): void {

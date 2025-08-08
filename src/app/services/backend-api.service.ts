@@ -260,18 +260,7 @@ export class BackendApiService {
     }
   }
 
-  /**
-   * Get the map proxy URL for map tile requests
-   * This centralizes the /api/map-proxy path in the service
-   */
-  getMapProxyUrl(): Observable<string> {
-    if (environment.production && environment.useConfigService) {
-      return this.configService.loadConfig().pipe(map((config) => config.baseUrl + '/api/map-proxy'));
-    } else {
-      // In development, use the environment baseUrl which includes
-      return of(environment.baseUrl + '/api/map-proxy');
-    }
-  }
+  // Map proxy URL method removed - now using direct MapTiler connection
 
   /**
    * Handle API errors and convert to user-friendly messages

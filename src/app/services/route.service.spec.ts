@@ -9,7 +9,21 @@ import { MultiWaypointRoute, RouteOptions, RoutePoint } from '../models/route';
 import { environment } from '../../environments/environments';
 import { of } from 'rxjs';
 import { PointType, RouteResponse, RouteType } from '../models/backend-api';
-import { DifficultyLevel, RoadType, RouteMetadata, SurfaceType } from '../models/route-metadata';
+import {
+  BikeInfrastructure,
+  DifficultyLevel,
+  POIType,
+  Rating,
+  RoadType,
+  RouteMetadata,
+  Season,
+  SurfaceType,
+  TechnicalDifficulty,
+  TerrainType,
+  TimeOfDay,
+  TrafficLevel,
+  WeatherType,
+} from '../models/route-metadata';
 
 describe('RouteService', () => {
   let service: RouteService;
@@ -1485,6 +1499,111 @@ describe('RouteService', () => {
           routeType: RouteType.MOUNTAIN_BIKING,
           isPublic: false,
           metadata: expect.stringContaining('bike_path'),
+        }),
+      );
+    });
+
+    it('should save a route with comprehensive metadata', () => {
+      const routeName = 'Advanced Route';
+      const metadata: RouteMetadata = {
+        surface: SurfaceType.ASPHALT,
+        terrain: TerrainType.HILLY,
+        roadTypes: [RoadType.BIKE_LANE, RoadType.SHARED_USE_PATH],
+        difficulty: 3 as DifficultyLevel,
+        scenicRating: 4 as Rating,
+        safetyRating: 5 as Rating,
+        trafficLevel: TrafficLevel.LOW,
+        bikeInfrastructure: [BikeInfrastructure.PROTECTED_BIKE_LANE, BikeInfrastructure.BIKE_PATH],
+        weatherConditions: {
+          temperature: 22,
+          windSpeed: 10,
+          windDirection: 'NW',
+          humidity: 65,
+          conditions: WeatherType.PARTLY_CLOUDY,
+        },
+        bestTimeOfDay: [TimeOfDay.MORNING, TimeOfDay.EVENING],
+        bestSeason: [Season.SPRING, Season.AUTUMN],
+        maxGradient: 8,
+        averageGradient: 4,
+        technicalDifficulty: TechnicalDifficulty.INTERMEDIATE,
+        pointsOfInterest: [
+          {
+            name: 'Scenic Overlook',
+            type: POIType.VIEWPOINT,
+            description: 'Beautiful city view',
+            latitude: 52.518,
+            longitude: 13.39,
+          },
+        ],
+        notes: 'Great route for intermediate cyclists',
+        tags: ['scenic', 'urban', 'bike-friendly'],
+      };
+
+      backendApiService.createRoute.mockReturnValue(of(mockRouteResponse));
+
+      service
+        .saveRoute(
+          mockRouteResult,
+          routeName,
+          'A challenging but rewarding route',
+          RouteType.ROAD_CYCLING,
+          true,
+          metadata,
+        )
+        .subscribe((response) => {
+          expect(response).toEqual(mockRouteResponse);
+        });
+
+      const call = backendApiService.createRoute.mock.calls[0][0];
+      const parsedMetadata = JSON.parse(call.metadata || '{}');
+
+      expect(parsedMetadata.surface).toBe(SurfaceType.ASPHALT);
+      expect(parsedMetadata.terrain).toBe(TerrainType.HILLY);
+      expect(parsedMetadata.difficulty).toBe(3);
+      expect(parsedMetadata.scenicRating).toBe(4);
+      expect(parsedMetadata.safetyRating).toBe(5);
+      expect(parsedMetadata.trafficLevel).toBe(TrafficLevel.LOW);
+      expect(parsedMetadata.weatherConditions.temperature).toBe(22);
+      expect(parsedMetadata.pointsOfInterest).toHaveLength(1);
+      expect(parsedMetadata.tags).toContain('scenic');
+    });
+
+    it('should handle route saving with minimal metadata', () => {
+      const routeName = 'Simple Route';
+      const metadata: RouteMetadata = {
+        difficulty: 1 as DifficultyLevel,
+      };
+
+      backendApiService.createRoute.mockReturnValue(of(mockRouteResponse));
+
+      service
+        .saveRoute(mockRouteResult, routeName, undefined, RouteType.WALKING, true, metadata)
+        .subscribe((response) => {
+          expect(response).toEqual(mockRouteResponse);
+        });
+
+      const call = backendApiService.createRoute.mock.calls[0][0];
+      const parsedMetadata = JSON.parse(call.metadata || '{}');
+
+      expect(parsedMetadata.difficulty).toBe(1);
+      expect(parsedMetadata.surface).toBeUndefined();
+    });
+
+    it('should handle route saving without metadata', () => {
+      const routeName = 'No Metadata Route';
+
+      backendApiService.createRoute.mockReturnValue(of(mockRouteResponse));
+
+      service.saveRoute(mockRouteResult, routeName, undefined, RouteType.HIKING, true).subscribe((response) => {
+        expect(response).toEqual(mockRouteResponse);
+      });
+
+      expect(backendApiService.createRoute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: routeName,
+          routeType: RouteType.HIKING,
+          isPublic: true,
+          metadata: undefined,
         }),
       );
     });

@@ -1,9 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { RouteCardComponent } from './route-card.component';
 import { RouteResponse, RouteType } from '../../models/backend-api';
 import { SurfaceType } from '../../models/route-metadata';
+import { AuthService } from '../../services/auth.service';
 
 describe('RouteCardComponent', () => {
   let component: RouteCardComponent;
@@ -35,8 +38,14 @@ describe('RouteCardComponent', () => {
   };
 
   beforeEach(async () => {
+    const authServiceSpy = {
+      isAuthenticated: jest.fn().mockReturnValue(true),
+      getCurrentUserValue: jest.fn().mockReturnValue({ id: 'user-1' }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [RouteCardComponent, RouterModule.forRoot([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: AuthService, useValue: authServiceSpy }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RouteCardComponent);
@@ -230,14 +239,14 @@ describe('RouteCardComponent', () => {
       component.route = { ...mockRoute, createdAt: [2025, 8, 3, 3, 14, 3, 610109000] };
       const formatted = component.formattedCreatedAt;
       // Accept different locale date formats (with slashes, dots, or dashes)
-      expect(formatted).toMatch(/\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{4}/);
+      expect(formatted).toMatch(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}/);
     });
 
     it('should format array date correctly', () => {
       component.route = mockRouteWithArrayDate;
       const formatted = component.formattedCreatedAt;
       // Accept different locale date formats (with slashes, dots, or dashes)
-      expect(formatted).toMatch(/\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{4}/);
+      expect(formatted).toMatch(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}/);
     });
 
     it('should handle invalid date', () => {
@@ -265,7 +274,7 @@ describe('RouteCardComponent', () => {
   });
 
   it('should handle route with minimal data', () => {
-    const minimalRoute: RouteResponse = {
+    component.route = {
       id: 'minimal-route',
       name: 'Minimal Route',
       description: '',
@@ -281,8 +290,6 @@ describe('RouteCardComponent', () => {
       pointCount: 0,
       metadata: null,
     };
-
-    component.route = minimalRoute;
     fixture.detectChanges();
 
     expect(component.formattedDistance).toBe('0 m');

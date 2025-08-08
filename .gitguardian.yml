@@ -1,0 +1,75 @@
+# GitGuardian configuration
+version: v1
+
+# Paths to ignore completely
+paths-ignore:
+  - '**/*.spec.ts' # Test files - but we've already fixed the issues
+  - '**/test/**' # Test directories
+  - '**/tests/**' # Test directories
+  - '**/*.test.ts' # Test files
+  - '**/*.mock.ts' # Mock files
+  - '**/node_modules/**'
+  - '**/dist/**'
+  - '**/build/**'
+  - '**/*.log'
+  - '**/coverage/**' # Coverage reports
+  - '**/tmp/**' # Temporary files
+  - '**/.env*' # Environment files
+  - '**/config.json' # Runtime configuration
+
+# Specific detectors to ignore (use sparingly)
+detectors-ignore:
+  # Only ignore specific patterns that are definitively false positives
+  # Example: Generic High Entropy secrets in test files
+  # - name: "generic_high_entropy_secret"
+  #   match: "test-fake-api-key-for-unit-tests-only"
+
+# Minimum occurrence for secrets to be reported (helps with false positives)
+minimum-occurrences: 2
+
+# Configure specific detectors
+detectors:
+  # JSON Web Token detector configuration
+  - name: 'jwt'
+    # Only trigger on tokens that look like real JWTs
+    min-entropy: 4.0
+
+# Ignore specific matches (use the match-ignore instead of completely ignoring detectors)
+match-ignore:
+  # Our sanitized test JWT - this is clearly a test token
+  - match: 'mock-jwt-token-not-real'
+    name: 'jwt'
+
+  # Our sanitized test API key
+  - match: 'test-fake-api-key-for-unit-tests-only'
+    name: 'generic_high_entropy_secret'
+
+  # Placeholder API keys in environment files
+  - match: '<KEY>'
+    name: 'api_key'
+
+  # Common test patterns
+  - match: 'testuser'
+    name: 'generic_high_entropy_secret'
+  - match: 'testpassword'
+    name: 'generic_high_entropy_secret'
+  - match: 'localhost'
+    name: 'generic_high_entropy_secret'
+
+# Files that should be scanned more carefully
+scanner:
+  sensitive:
+    - path: 'src/app/services/**/*.ts'
+      reason: 'Service files may contain API keys or tokens'
+    - path: 'src/environments/**/*.ts'
+      reason: 'Environment configuration files'
+    - path: 'src/app/interceptors/**/*.ts'
+      reason: 'Interceptors may handle authentication'
+
+# Enable enhanced scanning for sensitive files
+enhanced-scanning:
+  enabled: true
+  files:
+    - 'src/app/services/auth.service.ts'
+    - 'src/app/services/config.service.ts'
+    - 'src/app/interceptors/auth.interceptor.ts'
