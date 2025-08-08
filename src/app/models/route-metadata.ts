@@ -170,7 +170,10 @@ export function serializeRouteMetadata(metadata: RouteMetadata): string {
 /**
  * Helper function to parse JSON string from API to RouteMetadata
  */
-export function deserializeRouteMetadata(metadataJson: string): RouteMetadata {
+export function deserializeRouteMetadata(metadataJson: string | null | undefined): RouteMetadata {
+  if (!metadataJson) {
+    return {};
+  }
   try {
     return JSON.parse(metadataJson) as RouteMetadata;
   } catch (error) {

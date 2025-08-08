@@ -100,14 +100,16 @@
         View on Map
       </button>
 
-      <button
-        type="button"
-        class="btn btn-danger"
-        (click)="onDeleteRoute(); $event.stopPropagation()"
-        title="Delete route"
-      >
-        <i class="bi bi-trash"></i>
-      </button>
+      @if (canDeleteRoute) {
+        <button
+          type="button"
+          class="btn btn-danger"
+          (click)="onDeleteRoute(); $event.stopPropagation()"
+          title="Delete route"
+        >
+          <i class="bi bi-trash"></i>
+        </button>
+      }
 
       <div class="route-stats">
         <small class="text-muted"> Created {{ formattedCreatedAt }} </small>

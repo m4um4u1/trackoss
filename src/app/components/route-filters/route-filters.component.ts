@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouteType } from '../../models/backend-api';
@@ -13,6 +13,7 @@ export interface RouteFilters {
   surfaceType: SurfaceType | '';
   sortBy: 'name' | 'createdAt' | 'totalDistance' | 'difficulty';
   sortOrder: 'asc' | 'desc';
+  myRoutesOnly: boolean; // New filter for authenticated users
 }
 
 @Component({
@@ -23,6 +24,7 @@ export interface RouteFilters {
   styleUrl: './route-filters.component.scss',
 })
 export class RouteFiltersComponent {
+  @Input() isAuthenticated: boolean = false;
   @Output() filtersChanged = new EventEmitter<RouteFilters>();
   @Output() resetFilters = new EventEmitter<void>();
 
@@ -40,6 +42,7 @@ export class RouteFiltersComponent {
     surfaceType: '',
     sortBy: 'createdAt',
     sortOrder: 'desc',
+    myRoutesOnly: false,
   });
 
   // UI state
@@ -76,6 +79,7 @@ export class RouteFiltersComponent {
       surfaceType: '',
       sortBy: 'createdAt',
       sortOrder: 'desc',
+      myRoutesOnly: false,
     });
     this.resetFilters.emit();
   }

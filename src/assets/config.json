@@ -1,4 +1,6 @@
 {
   "baseUrl": "__BASE_URL__",
-  "valhallaUrl": "__VALHALLA_URL__"
+  "valhallaUrl": "__VALHALLA_URL__",
+  "mapTilerApiKey": "__MAPTILER_API_KEY__",
+  "mapTilerUrl": "__MAPTILER_URL__"
 }

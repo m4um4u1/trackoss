@@ -79,6 +79,32 @@ describe('MapPageComponent', () => {
     mockBackendApiService = {
       getRoute: jest.fn().mockReturnValue(of({})),
       getMapProxyUrl: jest.fn().mockReturnValue(of('http://test-proxy.com')),
+      getPublicRoutes: jest.fn().mockReturnValue(
+        of({
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: 50,
+          number: 0,
+          numberOfElements: 0,
+          first: true,
+          last: true,
+          empty: true,
+        }),
+      ),
+      getRoutes: jest.fn().mockReturnValue(
+        of({
+          content: [],
+          totalElements: 0,
+          totalPages: 0,
+          size: 50,
+          number: 0,
+          numberOfElements: 0,
+          first: true,
+          last: true,
+          empty: true,
+        }),
+      ),
     } as any;
 
     await TestBed.configureTestingModule({

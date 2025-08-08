@@ -64,6 +64,7 @@ describe('RouteFiltersComponent', () => {
       surfaceType: SurfaceType.ASPHALT,
       sortBy: 'name',
       sortOrder: 'asc',
+      myRoutesOnly: false,
     });
 
     component.onReset();

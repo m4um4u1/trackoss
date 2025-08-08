@@ -13,9 +13,9 @@
       <div>
         <h1 class="h2 mb-1">
           <i class="bi bi-map me-2"></i>
-          Routes
+          {{ getPageTitle() }}
         </h1>
-        <p class="text-muted mb-0">Discover and explore routes from the community</p>
+        <p class="text-muted mb-0">{{ getPageDescription() }}</p>
       </div>
       <button
         type="button"
@@ -31,7 +31,12 @@
   </div>
 
   <!-- Filters Section -->
-  <app-route-filters (filtersChanged)="onFiltersChanged($event)" (resetFilters)="onFiltersReset()"> </app-route-filters>
+  <app-route-filters
+    [isAuthenticated]="authService.isAuthenticated()"
+    (filtersChanged)="onFiltersChanged($event)"
+    (resetFilters)="onFiltersReset()"
+  >
+  </app-route-filters>
 
   <!-- Results Summary -->
   <div class="results-summary mb-3">

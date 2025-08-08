@@ -18,6 +18,7 @@ import { Subscription } from 'rxjs';
 import { Coordinates } from '../../models/coordinates';
 import { MultiWaypointRoute, RoutePoint, RouteOptions } from '../../models/route';
 import { RouteService } from '../../services/route.service';
+import { AuthService } from '../../services/auth.service';
 import { SaveRouteModalComponent } from '../save-route-modal/save-route-modal.component';
 import { WaypointManager } from '../../utils/waypoint-manager.util';
 
@@ -74,7 +75,10 @@ export class SidepanelComponent implements OnInit, OnDestroy, OnChanges {
   currentMultiWaypointRoute: MultiWaypointRoute | null = null;
   private multiWaypointRouteSubscription?: Subscription;
 
-  constructor(private routeService: RouteService) {}
+  constructor(
+    private routeService: RouteService,
+    private authService: AuthService,
+  ) {}
 
   ngOnInit(): void {
     this.multiWaypointRouteSubscription = this.routeService
@@ -166,7 +170,15 @@ export class SidepanelComponent implements OnInit, OnDestroy, OnChanges {
 
   // Save modal methods
   openSaveModal(): void {
-    this.showSaveModal = true;
+    // Only open modal if user is authenticated
+    if (this.isUserLoggedIn()) {
+      this.showSaveModal = true;
+    }
+  }
+
+  // Check if user is logged in
+  isUserLoggedIn(): boolean {
+    return this.authService.isAuthenticated();
   }
 
   closeSaveModal(): void {

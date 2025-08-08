@@ -160,14 +160,25 @@
     <!-- Save Route Button -->
     <div class="save-route-section mt-3">
       <button
-        class="btn btn-primary w-100"
+        class="btn w-100"
+        [ngClass]="{
+          'btn-primary': isUserLoggedIn(),
+          'btn-secondary': !isUserLoggedIn(),
+        }"
         (click)="openSaveModal()"
-        [disabled]="!hasWaypoints || !currentMultiWaypointRoute"
-        title="Save this route"
+        [disabled]="!hasWaypoints || !currentMultiWaypointRoute || !isUserLoggedIn()"
+        [title]="!isUserLoggedIn() ? 'Please log in to save routes' : 'Save this route'"
       >
         <i class="bi bi-bookmark-plus me-2"></i>
         Save Route
       </button>
+      <small
+        class="text-muted d-block text-center mt-2"
+        *ngIf="!isUserLoggedIn() && hasWaypoints && currentMultiWaypointRoute"
+      >
+        <i class="bi bi-info-circle me-1"></i>
+        Log in to save routes
+      </small>
     </div>
   </div>
 

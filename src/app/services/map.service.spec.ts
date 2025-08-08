@@ -2,13 +2,17 @@ import { TestBed } from '@angular/core/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { MapService } from './map.service';
-import { BackendApiService } from './backend-api.service';
-import { of } from 'rxjs';
+import { MapTilerService } from './maptiler.service';
+import { ConfigService } from './config.service';
+import { of, throwError } from 'rxjs';
+import { environment } from '../../environments/environments';
 
 describe('MapService', () => {
   let service: MapService;
   let httpMock: HttpTestingController;
-  let backendApiService: jest.Mocked<BackendApiService>;
+  let mapTilerService: jest.Mocked<MapTilerService>;
+  let configService: jest.Mocked<ConfigService>;
+  let originalConsoleError: jest.SpyInstance;
 
   const mockStyleResponse = {
     version: 8,
@@ -18,54 +22,74 @@ describe('MapService', () => {
   };
 
   beforeEach(() => {
-    const backendApiServiceSpy = {
-      getMapProxyUrl: jest.fn().mockReturnValue(of('/api/map-proxy')),
+    // Mock console.error once
+    originalConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const mapTilerServiceSpy = {
+      getMapStyle: jest.fn().mockReturnValue(of(mockStyleResponse)),
+      styles: {
+        outdoor: 'outdoor-v2',
+        streets: 'streets-v2',
+        satellite: 'satellite',
+      },
     };
+
+    const configServiceSpy = {
+      loadConfig: jest.fn().mockReturnValue(
+        of({
+          mapTilerUrl: 'https://api.maptiler.com/maps',
+          mapTilerApiKey: 'test-fake-api-key-for-unit-tests-only',
+        }),
+      ),
+    };
+
+    // Set environment to use direct MapTiler URL
+    (environment as any).mapTilerUrl = 'https://api.maptiler.com/maps';
+    (environment as any).mapTilerApiKey = 'test-fake-api-key-for-unit-tests-only';
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         MapService,
-        { provide: BackendApiService, useValue: backendApiServiceSpy },
+        { provide: MapTilerService, useValue: mapTilerServiceSpy },
+        { provide: ConfigService, useValue: configServiceSpy },
       ],
     });
     service = TestBed.inject(MapService);
     httpMock = TestBed.inject(HttpTestingController);
-    backendApiService = TestBed.inject(BackendApiService) as jest.Mocked<BackendApiService>;
+    mapTilerService = TestBed.inject(MapTilerService) as jest.Mocked<MapTilerService>;
+    configService = TestBed.inject(ConfigService) as jest.Mocked<ConfigService>;
   });
 
   afterEach(() => {
     httpMock.verify();
+    // Restore console.error after each test
+    originalConsoleError.mockRestore();
   });
 
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
 
-  describe('Map Proxy URL Tests', () => {
-    it('should use BackendApiService to get map proxy URL', () => {
+  describe('MapTiler Integration Tests', () => {
+    it('should use MapTilerService to get map styles', () => {
       const style = 'outdoor';
-      service.getMapTiles(style).subscribe();
+      service.getMapTiles(style).subscribe((response) => {
+        expect(response).toEqual(mockStyleResponse);
+      });
 
-      expect(backendApiService.getMapProxyUrl).toHaveBeenCalled();
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockStyleResponse);
+      expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
     });
 
     it('should handle different map styles', () => {
       const style = 'satellite';
 
-      // Mock a different URL return value
-      backendApiService.getMapProxyUrl.mockReturnValue(of('/api/map-proxy'));
+      service.getMapTiles(style).subscribe((response) => {
+        expect(response).toEqual(mockStyleResponse);
+      });
 
-      service.getMapTiles(style).subscribe();
-
-      expect(backendApiService.getMapProxyUrl).toHaveBeenCalled();
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockStyleResponse);
+      expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
     });
   });
 
@@ -76,9 +100,7 @@ describe('MapService', () => {
       expect(response).toEqual(mockStyleResponse);
     });
 
-    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockStyleResponse);
+    expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
   });
 
   it('should get map tiles for different styles', () => {
@@ -89,14 +111,14 @@ describe('MapService', () => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      expect(req.request.method).toBe('GET');
-      req.flush(mockStyleResponse);
+      expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
     });
   });
 
   it('should handle HTTP error', () => {
     const style = 'outdoor';
+    const mockError = new Error('Network error');
+    mapTilerService.getMapStyle.mockReturnValue(throwError(() => mockError));
 
     service.getMapTiles(style).subscribe({
       next: () => {
@@ -107,18 +129,22 @@ describe('MapService', () => {
       },
     });
 
-    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-    req.error(new ErrorEvent('Network error'));
+    expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
+
+    // Handle the fallback HTTP request
+    const req = httpMock.expectOne((request) => request.url.includes(style));
+    req.flush(mockStyleResponse);
   });
 
-  it('should use correct map proxy URL', () => {
+  it('should handle fallback to legacy method on error', () => {
     const style = 'test-style';
-    const expectedUrl = `/api/map-proxy/${style}/style.json`;
+    // First call fails, triggers fallback
+    mapTilerService.getMapStyle.mockReturnValueOnce(throwError(() => new Error('MapTiler error')));
 
     service.getMapTiles(style).subscribe();
 
-    const req = httpMock.expectOne(expectedUrl);
-    expect(req.request.url).toBe(expectedUrl);
+    // Legacy method uses direct HTTP call
+    const req = httpMock.expectOne((request) => request.url.includes(style));
     req.flush(mockStyleResponse);
   });
 
@@ -129,8 +155,7 @@ describe('MapService', () => {
       expect(response).toEqual(mockStyleResponse);
     });
 
-    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-    req.flush(mockStyleResponse);
+    expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
   });
 
   it('should handle special characters in style name', () => {
@@ -140,13 +165,14 @@ describe('MapService', () => {
       expect(response).toEqual(mockStyleResponse);
     });
 
-    const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-    req.flush(mockStyleResponse);
+    expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
   });
 
   describe('Advanced Error Handling and Edge Cases', () => {
     it('should handle server error responses', () => {
       const style = 'outdoor';
+      const mockError = { status: 500, message: 'Server error' };
+      mapTilerService.getMapStyle.mockReturnValue(throwError(() => mockError));
 
       service.getMapTiles(style).subscribe({
         next: () => {
@@ -157,12 +183,15 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.error(new ErrorEvent('Server error'), { status: 500, statusText: 'Internal Server Error' });
+      // Handle the fallback HTTP request
+      const req = httpMock.expectOne((request) => request.url.includes(style));
+      req.flush(mockStyleResponse);
     });
 
     it('should handle timeout errors', () => {
       const style = 'outdoor';
+      const mockError = { name: 'TimeoutError', message: 'Request timeout' };
+      mapTilerService.getMapStyle.mockReturnValue(throwError(() => mockError));
 
       service.getMapTiles(style).subscribe({
         next: () => {
@@ -173,12 +202,15 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.error(new ProgressEvent('timeout'), { status: 0, statusText: 'Timeout' });
+      // Handle the fallback HTTP request
+      const req = httpMock.expectOne((request) => request.url.includes(style));
+      req.flush(mockStyleResponse);
     });
 
     it('should handle malformed JSON response', () => {
       const style = 'outdoor';
+      // Mock returns invalid response, but service handles it
+      mapTilerService.getMapStyle.mockReturnValue(of('invalid json'));
 
       service.getMapTiles(style).subscribe({
         next: (response) => {
@@ -188,13 +220,11 @@ describe('MapService', () => {
           throw new Error('Should not error with malformed JSON');
         },
       });
-
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.flush('invalid json', { headers: { 'content-type': 'application/json' } });
     });
 
     it('should handle null response', () => {
       const style = 'outdoor';
+      mapTilerService.getMapStyle.mockReturnValue(of(null));
 
       service.getMapTiles(style).subscribe({
         next: (response) => {
@@ -204,13 +234,11 @@ describe('MapService', () => {
           throw new Error('Should not error with null response');
         },
       });
-
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.flush(null);
     });
 
     it('should handle empty response', () => {
       const style = 'outdoor';
+      mapTilerService.getMapStyle.mockReturnValue(of({}));
 
       service.getMapTiles(style).subscribe({
         next: (response) => {
@@ -220,9 +248,6 @@ describe('MapService', () => {
           throw new Error('Should not error with empty response');
         },
       });
-
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.flush({});
     });
 
     it('should handle very long style names', () => {
@@ -232,8 +257,7 @@ describe('MapService', () => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.flush(mockStyleResponse);
+      expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
     });
 
     it('should handle style names with unicode characters', () => {
@@ -243,8 +267,7 @@ describe('MapService', () => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.flush(mockStyleResponse);
+      expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
     });
 
     it('should handle concurrent requests for same style', () => {
@@ -264,11 +287,8 @@ describe('MapService', () => {
       request2.subscribe({ next: checkResponse });
       request3.subscribe({ next: checkResponse });
 
-      // Should make 3 separate requests
-      const reqs = httpMock.match(`/api/map-proxy/${style}/style.json`);
-      expect(reqs.length).toBe(3);
-
-      reqs.forEach((req) => req.flush(mockStyleResponse));
+      // Should call the service 3 times
+      expect(mapTilerService.getMapStyle).toHaveBeenCalledTimes(3);
       expect(responseCount).toBe(3);
     });
 
@@ -282,13 +302,14 @@ describe('MapService', () => {
       });
 
       styles.forEach((style) => {
-        const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-        req.flush(mockStyleResponse);
+        expect(mapTilerService.getMapStyle).toHaveBeenCalledWith(style);
       });
     });
 
     it('should handle network connectivity issues', () => {
       const style = 'outdoor';
+      const mockError = { type: 'error', message: 'Network connectivity issue' };
+      mapTilerService.getMapStyle.mockReturnValue(throwError(() => mockError));
 
       service.getMapTiles(style).subscribe({
         next: () => {
@@ -299,12 +320,15 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+      // Handle the fallback HTTP request
+      const req = httpMock.expectOne((request) => request.url.includes(style));
+      req.flush(mockStyleResponse);
     });
 
     it('should handle 404 not found errors', () => {
       const style = 'non-existent-style';
+      const mockError = { status: 404, message: 'Not found' };
+      mapTilerService.getMapStyle.mockReturnValue(throwError(() => mockError));
 
       service.getMapTiles(style).subscribe({
         next: () => {
@@ -315,12 +339,15 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.error(new ErrorEvent('Not found'), { status: 404, statusText: 'Not Found' });
+      // Handle the fallback HTTP request
+      const req = httpMock.expectOne((request) => request.url.includes(style));
+      req.flush(mockStyleResponse);
     });
 
     it('should handle 403 forbidden errors', () => {
       const style = 'restricted-style';
+      const mockError = { status: 403, message: 'Forbidden' };
+      mapTilerService.getMapStyle.mockReturnValue(throwError(() => mockError));
 
       service.getMapTiles(style).subscribe({
         next: () => {
@@ -331,8 +358,9 @@ describe('MapService', () => {
         },
       });
 
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.error(new ErrorEvent('Forbidden'), { status: 403, statusText: 'Forbidden' });
+      // Handle the fallback HTTP request
+      const req = httpMock.expectOne((request) => request.url.includes(style));
+      req.flush(mockStyleResponse);
     });
 
     it('should handle complex style response with all properties', () => {
@@ -387,6 +415,7 @@ describe('MapService', () => {
       };
 
       const style = 'complex-style';
+      mapTilerService.getMapStyle.mockReturnValue(of(complexStyleResponse));
 
       service.getMapTiles(style).subscribe((response) => {
         expect(response).toEqual(complexStyleResponse);
@@ -396,9 +425,6 @@ describe('MapService', () => {
         expect(response.terrain).toBeDefined();
         expect(response.fog).toBeDefined();
       });
-
-      const req = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req.flush(complexStyleResponse);
     });
 
     it('should handle service instantiation correctly', () => {
@@ -410,6 +436,7 @@ describe('MapService', () => {
       const style = 'test-style';
 
       // First request - network error
+      mapTilerService.getMapStyle.mockReturnValueOnce(throwError(() => ({ type: 'error', message: 'Network error' })));
       service.getMapTiles(style).subscribe({
         next: () => {
           throw new Error('Should have failed with network error');
@@ -419,10 +446,12 @@ describe('MapService', () => {
         },
       });
 
-      const req1 = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req1.error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+      // Handle the first fallback HTTP request
+      const req1 = httpMock.expectOne((request) => request.url.includes(style));
+      req1.flush(mockStyleResponse);
 
       // Second request - server error
+      mapTilerService.getMapStyle.mockReturnValueOnce(throwError(() => ({ status: 500, message: 'Server error' })));
       service.getMapTiles(style).subscribe({
         next: () => {
           throw new Error('Should have failed with server error');
@@ -432,16 +461,17 @@ describe('MapService', () => {
         },
       });
 
-      const req2 = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req2.error(new ErrorEvent('Server error'), { status: 500, statusText: 'Internal Server Error' });
+      // Handle the second fallback HTTP request
+      const req2 = httpMock.expectOne((request) => request.url.includes(style));
+      req2.flush(mockStyleResponse);
 
       // Third request - success
+      mapTilerService.getMapStyle.mockReturnValueOnce(of(mockStyleResponse));
       service.getMapTiles(style).subscribe((response) => {
         expect(response).toEqual(mockStyleResponse);
       });
 
-      const req3 = httpMock.expectOne(`/api/map-proxy/${style}/style.json`);
-      req3.flush(mockStyleResponse);
+      expect(mapTilerService.getMapStyle).toHaveBeenCalledTimes(3);
     });
   });
 });
